@@ -62,7 +62,7 @@ public class MainGui extends JFrame {
 	
 	private void addUsersToModel(int n) {
 		for(int i=0; i<n; ++i) {
-			if(!model.AddUserAtRandomLocation(new User())) {
+			if(!model.AddRandomUser()) {
 				System.out.println("Cannot place user");
 			}
 		}

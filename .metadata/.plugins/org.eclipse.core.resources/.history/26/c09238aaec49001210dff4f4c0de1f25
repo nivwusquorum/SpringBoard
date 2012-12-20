@@ -1,7 +1,0 @@
-
-package uk.ac.cam.cl.ss958.SpringBoardSimulation;
-
-public class OptionsPanel extends java.swing.JPanel {
-
-
-}

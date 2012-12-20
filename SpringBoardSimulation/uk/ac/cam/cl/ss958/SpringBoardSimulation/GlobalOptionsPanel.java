@@ -14,6 +14,7 @@ import java.awt.event.KeyListener;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
@@ -46,10 +47,11 @@ public class GlobalOptionsPanel extends JPanel {
 				model.clearUsers();
 			}
 		});
-		
+		final JPanel self = this;
 		addUser.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				model.AddUserAtRandomLocation(new User());
+				if(!model.AddRandomUser())
+					JOptionPane.showMessageDialog(self, "Not enough space to place user.");
 			}
 		});
 		setSize(200, 300);

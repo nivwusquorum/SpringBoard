@@ -3,25 +3,15 @@ package uk.ac.cam.cl.ss958.SpringBoardSimulation;
 import uk.ac.cam.cl.ss958.IntegerGeometry.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
-public class SimulationModel {	
-	class UserInModel {
-		final public User user;
-		public Point location;
-		
-		UserInModel(User user, Point location) {
-			this.user = user;
-			this.location = location;
-		}
-	}
-	
+public class SimulationModel {		
 	enum SoftError {
 		NONE,
 		WRONG_MOVING;
 	}
 
-	public static final int USER_RADIUS = 10;
 
 	final Random generator = new Random (System.currentTimeMillis());
 	
@@ -30,7 +20,7 @@ public class SimulationModel {
 
 	private int selectedUser;
 	private Point selectedUserClickTranslation;
-	private ArrayList<UserInModel> users;
+	private HashMap<Integer, User> users;
 	
 	private SoftError softError = SoftError.NONE;
 	
@@ -57,39 +47,40 @@ public class SimulationModel {
 	SimulationModel(int width, int height) {
 		this.width = width;
 		this.height = height;
-		users = new ArrayList<UserInModel>();
+		users = new HashMap<Integer, User>();
 		selectedUser = -1;
 		onChange();
 	}
 	
-	public ArrayList<UserInModel> getUsers() {
+	public HashMap<Integer, User> getUsers() {
 		return users;
 	}
 	
-	boolean ValidatePosition(Point x, int excludingIndex) {
-		if (x.getX() <= USER_RADIUS || 
-		    x.getX() >= width-USER_RADIUS ||
-		    x.getY() <= USER_RADIUS ||
-		    x.getY() >= height - USER_RADIUS) return false;
-		for (int i = 0; i < users.size(); ++i) {
-			if(i != excludingIndex && Compute.euclideanDistanceSquared(x, users.get(i).location) <= Compute.square(2*USER_RADIUS)) {
+	public boolean validatePosition(Point x, int excludingIndex) {
+		if (x.getX() <= User.USER_RADIUS || 
+		    x.getX() >= width-User.USER_RADIUS ||
+		    x.getY() <= User.USER_RADIUS ||
+		    x.getY() >= height - User.USER_RADIUS) return false;
+		for (Integer id : users.keySet()) {
+			if (id != excludingIndex &&
+			        Compute.euclideanDistanceSquared(x, users.get(id).getLocation()) 
+			        <= Compute.square(2*User.USER_RADIUS)) {
 				return false;
 			}
 		}
 		return true;
 	}
 	
-	public boolean AddUserAtRandomLocation(User user) {
-		int retries = 5;
-		while(retries-- >= 0) {
-			Point location = new Point(generator.nextInt(width), generator.nextInt(height));
-			if(ValidatePosition(location, -1)) {
-				users.add(new UserInModel(user, location));
-				onChange();
-				return true;
-			}
+	public boolean AddRandomUser() {
+		try {
+			User u = new User(this);
+			users.put(u.getID(), u);
+			onChange();
+			return true;
+		} catch(CannotPlaceUserException e) {
+			onChange();
+			return false;
 		}
-		return false;
 	}
 	
 	public int getSelectedUser() {
@@ -97,10 +88,11 @@ public class SimulationModel {
 	}
 
 	public void maybeSelectUser(Point p) {
-		for(int i=0; i<users.size(); ++i) {
-			if(Compute.euclideanDistanceSquared(p, users.get(i).location) <= Compute.square(USER_RADIUS)) {
-				selectedUserClickTranslation = users.get(i).location.sub(p);
-				selectedUser = i;
+		for(Integer id : users.keySet()) {
+			if(Compute.euclideanDistanceSquared(p, users.get(id).getLocation()) <= 
+					Compute.square(User.USER_RADIUS)) {
+				selectedUserClickTranslation = users.get(id).getLocation().sub(p);
+				selectedUser = id;
 				onChange();
 				return;
 			}
@@ -109,16 +101,17 @@ public class SimulationModel {
 		onChange();
 	}
 	
+	// TODO: move validating to user
 	public void maybeMoveUser(Point p) {
 		if (selectedUser != -1) {
-			Point newLocation = p.add(selectedUserClickTranslation);
-			if(ValidatePosition(newLocation, selectedUser)) {
-				users.get(selectedUser).location = newLocation;
+			try {
+				users.get(selectedUser).setLocation(p.add(selectedUserClickTranslation));
 				removeErrorIfPresent(SoftError.WRONG_MOVING);
-			} else {
+			} catch(CannotPlaceUserException e) {
 				softError = SoftError.WRONG_MOVING;
+			} finally {
+				onChange();
 			}
-			onChange();
 		}
 	}
 	
