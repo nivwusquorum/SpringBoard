@@ -1,0 +1,30 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+import java.util.Random;
+
+import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
+
+public class User {
+	private final Random generator = new Random (System.currentTimeMillis());
+
+	private int range;
+	private Point location;
+	
+	public Point getLocation() {
+		return location;
+	}
+
+	public void setLocation(Point location) {
+		this.location = location;
+	}
+
+	public int getRange() {
+		return range;
+	}
+	
+	public User() {
+		// TODO: change to exponential distribution
+		range = 20 + generator.nextInt(50);
+		Point location = new Point(generator.nextInt(width), generator.nextInt(height));
+	}
+}

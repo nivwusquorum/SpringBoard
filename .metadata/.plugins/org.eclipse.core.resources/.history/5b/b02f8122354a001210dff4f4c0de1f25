@@ -1,0 +1,16 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+import javax.swing.JPanel;
+
+public class UserOptionsPanel extends JPanel {
+
+	SimulationModel model;
+	int displayedUser = -2;
+			
+	UserOptionsPanel(Model mainModel) {
+		this.model = mainModel;
+		
+		maybeUpdate();
+	}
+	
+}

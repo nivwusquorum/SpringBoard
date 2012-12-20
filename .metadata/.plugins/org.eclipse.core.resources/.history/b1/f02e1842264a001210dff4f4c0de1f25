@@ -1,0 +1,183 @@
+
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+import java.awt.Color;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+public class OptionsPanel extends JPanel {
+	private JTextField pattern,name,author,rows;
+	private JSpinner width, height, startX, startY;
+	private JButton addG,remG;
+	private JButton setB,cleB;
+	
+	OptionsPanel() {
+		  super(new GridBagLayout());        
+	        GridBagConstraints c = new GridBagConstraints();
+	        c.fill = GridBagConstraints.HORIZONTAL;
+	        c.insets = new Insets(2,2,2,2);
+	        c.anchor = GridBagConstraints.NORTH;
+	        c.weighty = 0.001; 
+	        c.gridx = 0;
+	        c.gridy = 0; add(new JLabel("Pattern String"),c);
+	        c.gridy = 1; add(pattern = new JTextField("::8:8:1:1:",20),c);
+	        c.gridy = 2; add(new JLabel("Name"),c);
+	        c.gridy = 3; add(name = new JTextField(),c);
+	        c.gridy = 4; add(new JLabel("Author"),c);
+	        c.gridy = 5; add(author = new JTextField(),c);
+	        c.gridy = 6; add(new JLabel("Width"),c);
+	        c.gridy = 8; add(width = new JSpinner(new SpinnerNumberModel(8,8,1024,1)),c);
+	        c.gridy = 9; add(new JLabel("Height"),c);
+	        c.gridy = 10; add(height = new JSpinner(new SpinnerNumberModel(8,8,1024,1)),c);
+	        c.gridy = 11; add(new JLabel("StartX"),c);
+	        c.gridy = 12; add(startX = new JSpinner(new SpinnerNumberModel(0,0,1024,1)),c);
+	        c.gridy = 13; add(new JLabel("StartY"),c);
+	        c.gridy = 14; add(startY = new JSpinner(new SpinnerNumberModel(0,0,1024,1)),c);
+	        c.gridy = 15; add(new JLabel("Rows"),c);
+	        c.gridy = 16; add(rows = new JTextField(),c);       
+	        c.gridy = 17; add(setB = new JButton("Set all"),c); 
+	        c.gridy = 18; add(cleB = new JButton("Clear board"),c);
+	        c.gridy = 19; add(addG = new JButton("Add generations"),c); 
+	        c.gridy = 20; add(remG = new JButton("Remove generations"),c);
+	        cleB.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					rows.setText("0");
+					startX.setValue(0);
+					startY.setValue(0);
+				}
+			});
+	        setB.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					char [] tab = new char [((Integer)height.getValue()).intValue()*(((Integer)width.getValue()).intValue()+1)-1];
+					int ts = 0;
+					for(int i=0; i<((Integer)height.getValue()); ++i) {
+						for(int j=0; j<((Integer)width.getValue()); ++j) {
+							tab[ts++]='1';
+						}
+						if(i!=(((Integer)height.getValue())-1)) tab[ts++]=' ';
+					}
+					startX.setValue(0);
+					startY.setValue(0);				
+					rows.setText(new String(tab));
+					updatePatternArgs();
+				}
+			});
+			addG.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					changeG(1);
+				}
+			});
+			remG.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					changeG(-1);
+				}
+			});
+			
+	        
+	        pattern.addFocusListener(new FocusListener() {
+				public void focusGained(FocusEvent arg0) { }
+				public void focusLost(FocusEvent arg0) {
+					updatePatternString();	
+				}
+			});
+	        pattern.addKeyListener(new KeyListener() {
+				public void keyPressed(KeyEvent arg0) { 
+					if(arg0.getKeyCode()==KeyEvent.VK_ENTER) updatePatternString();	
+				}
+				public void keyReleased(KeyEvent arg0) {}
+				public void keyTyped(KeyEvent arg0) {}
+		
+			});
+	        name.addFocusListener(new FocusListener() {
+				public void focusGained(FocusEvent arg0) { }
+				public void focusLost(FocusEvent arg0) {
+					updatePatternArgs();	
+				}
+			});
+	        name.addKeyListener(new KeyListener() {
+				public void keyPressed(KeyEvent arg0) { 
+					if(arg0.getKeyCode()==KeyEvent.VK_ENTER) updatePatternArgs();	
+				}
+				public void keyReleased(KeyEvent arg0) {}
+				public void keyTyped(KeyEvent arg0) {}
+		
+			});
+	        author.addFocusListener(new FocusListener() {
+				public void focusGained(FocusEvent arg0) { }
+				public void focusLost(FocusEvent arg0) {
+					updatePatternArgs();	
+				}
+			});
+	        author.addKeyListener(new KeyListener() {
+				public void keyPressed(KeyEvent arg0) { 
+					if(arg0.getKeyCode()==KeyEvent.VK_ENTER) updatePatternArgs();	
+				}
+				public void keyReleased(KeyEvent arg0) {}
+				public void keyTyped(KeyEvent arg0) {}
+		
+			});
+	        width.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent arg0) {
+					updatePatternArgs();
+				}
+
+			});
+	        height.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent arg0) {
+					updatePatternArgs();
+				}
+
+			});
+	        startX.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent arg0) {
+					updatePatternArgs();
+				}
+
+			});
+	        startY.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent arg0) {
+					updatePatternArgs();
+				}
+
+			});
+	        rows.addFocusListener(new FocusListener() {
+				public void focusGained(FocusEvent arg0) { }
+				public void focusLost(FocusEvent arg0) {
+					updatePatternArgs();	
+				}
+			});
+	        rows.addKeyListener(new KeyListener() {
+				public void keyPressed(KeyEvent arg0) { 
+					if(arg0.getKeyCode()==KeyEvent.VK_ENTER) updatePatternArgs();	
+				}
+				public void keyReleased(KeyEvent arg0) {}
+				public void keyTyped(KeyEvent arg0) {}
+		
+			});
+	        
+	}
+	private void updatePatternArgs() {
+		
+	}
+	private void updatePatternString() {
+		
+	}
+	private void changeG(int x) {
+		
+	}
+}

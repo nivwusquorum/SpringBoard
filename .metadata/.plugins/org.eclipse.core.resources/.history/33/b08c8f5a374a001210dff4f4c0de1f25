@@ -1,0 +1,52 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
+
+public class UserOptionsPanel extends JPanel {
+
+	SimulationModel model;
+	int displayedUser = -2;
+			
+	UserOptionsPanel(SimulationModel mainModel) {
+		super(new GridBagLayout());
+		this.model = mainModel;
+		maybeUpdate();
+	}
+	
+	public void maybeUpdate() {
+		if (model.getSelectedUser() == displayedUser) return;
+		System.out.println("Updating user opts");
+		displayedUser = model.getSelectedUser();
+		removeAll();
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.insets = new Insets(2,2,2,2);
+		c.anchor = GridBagConstraints.NORTH;
+
+		System.out.println("Updating user opts2");
+
+		if (model.getSelectedUser() == -1) {
+			c.gridx = 0; c.gridy = 0; c.weighty = 0.0;
+			add(new JLabel("No user selected."), c);
+		} else {
+			UserInModel user = model.getUsers().get(displayedUser);
+			c.gridx = 0; c.gridy = 0; c.weighty = 0.0;
+			add(new JLabel("User ID: " + model.getSelectedUser()), c);
+			
+			c.gridx = 0; c.gridy = 1; c.weighty = 0.5;
+			add(new JLabel("Range"),c);
+			JSpinner range = new JSpinner(new SpinnerNumberModel(,10,500,1))
+			c.gridx = 1; c.gridy = 1; c.weighty = 0.0;
+			add(range,c);
+		}
+		revalidate();
+	}
+	
+}

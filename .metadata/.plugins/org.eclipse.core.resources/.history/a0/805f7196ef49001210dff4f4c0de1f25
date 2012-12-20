@@ -1,0 +1,13 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+public class Strings {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

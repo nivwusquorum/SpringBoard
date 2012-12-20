@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="java.awt.BorderLayout"/>
+<fullyQualifiedTypeName name="javax.swing.JScrollPane"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.SimulationPanel"/>
+<fullyQualifiedTypeName name="java.awt.Color"/>
+<fullyQualifiedTypeName name="java.util.Random"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.ComputationalGeometry.Point"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.ComputationalGeometry"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.SimulationModel.UserInSpace"/>
+<fullyQualifiedTypeName name="java.awt.Point"/>
+<fullyQualifiedTypeName name="java.lang.System"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.SimulationModel.SoftError"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.IntegerGeometry.Point"/>
+<fullyQualifiedTypeName name="javax.swing.JComponent"/>
+<fullyQualifiedTypeName name="javax.swing.JPanel"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.GlobalOptionsPanel"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.UserOptionsPanel"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.Strings"/>
+<fullyQualifiedTypeName name="java.awt.GridBagLayout"/>
+<fullyQualifiedTypeName name="java.awt.GridBagConstraints"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.SimulationModel"/>
+<fullyQualifiedTypeName name="javax.swing.JLabel"/>
+<fullyQualifiedTypeName name="javax.swing.JSpinner"/>
+<fullyQualifiedTypeName name="javax.swing.SpinnerNumberModel"/>
+<fullyQualifiedTypeName name="uk.ac.cam.cl.ss958.SpringBoardSimulation.SimulationModel.UserInModel"/>
+<fullyQualifiedTypeName name="javax.swing.event.ChangeEvent"/>
+<fullyQualifiedTypeName name="javax.swing.event.ChangeListener"/>
+</qualifiedTypeNameHistroy>

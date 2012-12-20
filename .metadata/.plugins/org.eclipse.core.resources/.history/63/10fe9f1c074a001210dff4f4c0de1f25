@@ -1,0 +1,53 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Color;
+
+import javax.swing.JPanel;
+
+import uk.ac.cam.cl.ss958.SpringBoardSimulation.SimulationModel.UserInSpace;
+
+public class SimulationPanel extends JPanel {
+    static final Color BACKGROUND_COLOR = new Color(175, 238, 238);
+    static final Color USER_COLOR = new Color(000, 206, 209);
+
+    SimulationModel model;
+	SimulationPanel() {
+		model = new SimulationModel(760,680);
+		if(!model.AddUserAtRandomLocation(new User())) {
+			System.out.println("Cannot create first user?!");
+		}
+		computeSize();
+	}
+	
+	private int width = 1; //Width of simulation board in pixels
+	private int height = 1; //Height of simulation board in pixels
+
+	public Dimension getPreferredSize() {
+		return new Dimension(width, height);
+	}
+	
+	protected void paintComponent(Graphics g) {
+		g.setColor(BACKGROUND_COLOR);
+		g.fillRect(0, 0, width, height);
+		System.out.println(model.getUsers().size());
+		for(UserInSpace user : model.getUsers()) {
+			g.fillOval(user.location.getX(), 
+					   user.location.getY(),
+					   2*SimulationModel.USER_RADIUS,
+					   2*SimulationModel.USER_RADIUS);
+		}
+	}
+	private void computeSize() {
+		int newWidth = model.getWidth();
+		int newHeight = model.getHeight();
+		if (newWidth != width || newHeight != height) {
+			width = newWidth;
+			height = newHeight;
+			revalidate(); //trigger the GamePanel to re-layout its components
+		}
+		
+	}
+
+}

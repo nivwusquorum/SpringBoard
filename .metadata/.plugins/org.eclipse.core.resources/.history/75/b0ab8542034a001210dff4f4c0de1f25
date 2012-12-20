@@ -1,0 +1,14 @@
+package uk.ac.cam.cl.ss958.ComputationalGeometry;
+
+
+public class ComputationalGeometry {
+	
+
+	static int square(int x) {
+		return x*x;
+	}
+	
+	static int euclideanDistanceSquared(Point a, Point b) {
+		return square(a.getX()-b.getX()) + square(a.getX()-a.getY());
+	}
+}

@@ -1,0 +1,7 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+import javax.swing.JPanel;
+
+public class UserOptionsPanel extends JPanel {
+
+}

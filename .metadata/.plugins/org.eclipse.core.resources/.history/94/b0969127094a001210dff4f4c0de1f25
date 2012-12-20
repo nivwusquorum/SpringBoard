@@ -1,0 +1,5 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+public class User {
+	int range = 20;
+}

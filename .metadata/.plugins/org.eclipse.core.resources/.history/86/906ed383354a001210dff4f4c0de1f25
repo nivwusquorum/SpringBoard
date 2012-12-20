@@ -1,0 +1,23 @@
+package uk.ac.cam.cl.ss958.SpringBoardSimulation;
+
+import javax.swing.JPanel;
+
+public class UserOptionsPanel extends JPanel {
+
+	SimulationModel model;
+	int displayedUser = -2;
+			
+	UserOptionsPanel(SimulationModel mainModel) {
+		this.model = mainModel;
+		maybeUpdate();
+	}
+	
+	public void maybeUpdate() {
+		if (model.getSelectedUser() == displayedUser) return;
+		removeAll();
+		if (model.getSelectedUser() == -1) {
+			add(new JLabel("Pattern String"));
+		}
+	}
+	
+}
