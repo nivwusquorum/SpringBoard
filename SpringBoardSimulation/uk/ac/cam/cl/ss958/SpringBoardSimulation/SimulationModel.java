@@ -101,6 +101,13 @@ public class SimulationModel {
 		onChange();
 	}
 	
+	public void simulationStep() {
+		for (Integer id : users.keySet()) {
+			users.get(id).maybeRandomlyMove();
+		}
+		onChange();
+	}
+	
 	// TODO: move validating to user
 	public void maybeMoveUser(Point p) {
 		if (selectedUser != -1) {

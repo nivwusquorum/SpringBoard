@@ -40,7 +40,7 @@ public class GlobalOptionsPanel extends JPanel {
 		c.gridx = 0;      
 		c.gridy = 0; add(clearBoard = new JButton("Clear board"),c); 
 		c.gridy = 1; add(addUser = new JButton("Add user"),c);
-		c.gridy = 2; add(randomSimulation = new JButton("Randomly Simulate"),c); 
+		c.gridy = 2; add(randomSimulation = new JButton(Strings.START_SIMULATION),c); 
 		
 		clearBoard.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -52,6 +52,19 @@ public class GlobalOptionsPanel extends JPanel {
 			public void actionPerformed(ActionEvent arg0) {
 				if(!model.AddRandomUser())
 					JOptionPane.showMessageDialog(self, "Not enough space to place user.");
+			}
+		});
+		
+		randomSimulation.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				Simulator simulator = Simulator.getInstance();
+				if (simulator.isRunning()) {
+					simulator.stop();
+					randomSimulation.setText(Strings.START_SIMULATION);
+				} else {
+					simulator.start();
+					randomSimulation.setText(Strings.STOP_SIMULATION);
+				}
 			}
 		});
 		setSize(200, 300);

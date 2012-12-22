@@ -22,7 +22,6 @@ public class MainGui extends JFrame {
 	private GlobalOptionsPanel globalOptionsPanel;
 	private UserOptionsPanel userOptionsPanel;
 	private JPanel optionsPanel;
-	
 	private SimulationModel model;
 	
 	MainGui() {
@@ -45,6 +44,8 @@ public class MainGui extends JFrame {
 		optionsPanel = createOptionsPanel();
 		add(optionsPanel,BorderLayout.EAST);
 		setSize(1024,768);
+		
+		Simulator.getInstance().setModel(model);
 	}
 
 	private void addBorder(JComponent component, String title) {
