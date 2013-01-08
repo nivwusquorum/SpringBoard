@@ -34,30 +34,28 @@ public class Huggler extends Service {
 	private Handler askingHandler;
 	private Runnable runAsk;
 
+	private HugglerProtocol protocol;
 	@Override
 	public void onCreate() {
-		/*
-	    // Start up the thread running the service.  Note that we create a
-	    // separate thread because the service normally runs in the process's
-	    // main thread, which we don't want to block.  We also make it
-	    // background priority so CPU-intensive work will not disrupt our UI.
-	    HandlerThread thread = new HandlerThread("ServiceStartArguments",
-	            Process.THREAD_PRIORITY_BACKGROUND);
-	    thread.start();
+		System.setProperty("java.net.preferIPv4Stack", "true");
+		System.setProperty("java.net.preferIPv6Stack", "false");
 
-	    // Get the HandlerThread's Looper and use it for our Handler 
-	    mServiceLooper = thread.getLooper();
-	    mServiceHandler = new ServiceHandler(mServiceLooper);
-		 */
 		running = false;
 		askingHandler = new Handler();
 		runAsk = new Runnable() {
 			@Override
 			public void run() {
-				ask();
-				askingHandler.postDelayed(this, 30000); // 30s
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						ask();
+					}
+				}).start();
+				askingHandler.postDelayed(this, 
+						60 * 1000 * HugglerConfig.UPDATE_INTERVAL_M);
 			}
 		};
+		protocol = new HugglerSpringBoardProtocol(this);
 	}
 
 	@Override
@@ -74,22 +72,26 @@ public class Huggler extends Service {
 	}
 
 	private void initialize() {
-		new Thread(new Runnable() {
+		Thread server = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				setUpServer();
 				startAnswering();
 			}
-		}).start();
+		});
 		
-		new Thread(new Runnable() {
+		Thread discovery = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				setUpJmdns();
 				startAsking();
 			}
-		}).start();
-
+		});
+		// TODO set priorites to background
+		server.setPriority(Thread.MIN_PRIORITY);
+		discovery.setPriority(Thread.MIN_PRIORITY);
+		server.start();
+		discovery.start();
 	}
 
 	private void setUpServer() {
@@ -168,56 +170,109 @@ public class Huggler extends Service {
 	
 	private void ask() {
 		Log.d(TAG, "Started asking");
-		String people = "";
 		for(ServiceInfo si : jmdns.list(jmdnsType, 6000)) { // timeout: 6s
 			Log.d(TAG, " Trying to connect to " + si.getName());
 			if (si.getName().equals(dbh.readProperty(Property.HUGGLER_ID)))
 				continue;
-			// TODO: What if there are multiple host address?
-			// When? Why?
 			try {
-				Log.d(TAG, "Host has " + si.getInet4Addresses().length + " addresses. ");
+				// TODO: What if there are multiple host address?
+				// When? Why?
+				Log.d(TAG, "Host has " + si.getInet4Addresses().length + " v4 addresses. ");
+				Log.d(TAG, "Host has " + si.getInet6Addresses().length + " v6 addresses. ");
+				if(si.getInet6Addresses().length > 0) {
+					Log.d(TAG, "Host IPv6 address is " + si.getInet6Addresses()[0].getHostAddress());
+					Log.d(TAG, "Host IPv6 hostname is " + si.getInet6Addresses()[0].getCanonicalHostName());
+					Log.d(TAG, "Host is linklocal " + si.getInet6Addresses()[0].isLinkLocalAddress());
+				}
 				if(si.getInet4Addresses().length == 0) continue;
 				Log.d(TAG, "Trying to connect to " + si.getInet4Addresses()[0] + " on port " + si.getPort());
 				Socket s = new Socket(si.getInet4Addresses()[0], si.getPort());
-				ObjectInputStream reader = new ObjectInputStream(s.getInputStream());
-				Object message = reader.readObject();
-				if(message instanceof String) {
-					people = people + (String)message + ", ";
-				}
-				s.close();
-			} catch (Exception e) {
-				Log.w(TAG, "Cannot communicate with discovered peer (" +e.getMessage() + "). ");
+
+				String clientName = determineAndValidateReceiver(s, true);
 				
+				protocol.askClient(s, clientName); 
+			} catch (Throwable e) {
+				Log.w(TAG, "Cannot communicate with discovered peer (" +e.getMessage() + "). ");
 				for (StackTraceElement el : e.getStackTrace()) {				
 					Log.w(TAG, el.toString());
 				}
 			}
 		}
-		Log.d(TAG, "Communicated with "+people+"wow! ");
+		Log.d(TAG, "Done asking");
 	}
 	
 
+	public String getUserName() {
+		return dbh.readProperty(Property.HUGGLER_ID);
+	}
+	
+	private HugglerIntroMessage receiveIntroMessage(Socket clientSocket) {
+		try {
+			ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
+			
+			Object message = reader.readObject();
+			HugglerIntroMessage introMessage;
+			if(message instanceof HugglerIntroMessage) {
+				introMessage = (HugglerIntroMessage)message;
+			} else {
+				throw new Exception("Intro message not received");
+			}
+			return introMessage;
+		} catch(Exception e) {
+			Log.d(TAG, "Cannot receive intro Message (" + e.getMessage()+")");
+			return null;
+		}
+	}
+	
+	private boolean sendIntroMessage(Socket clientSocket) {
+		try {
+			ObjectOutputStream writer = new ObjectOutputStream(clientSocket.getOutputStream());
+	
+			HugglerIntroMessage introMessage =
+					new HugglerIntroMessage(protocol.getName(),
+											getUserName());
+			writer.writeObject(introMessage);
+			return true;
+		} catch(Exception e) {
+			Log.d(TAG, "Cannot send intro Message (" + e.getMessage()+")");
+			return false;
+		}
+	}
+	
+	private String determineAndValidateReceiver(Socket clientSocket, boolean initiating) {
+		HugglerIntroMessage introMessage = null;
+		boolean messageSent = false;
+		if(initiating) {
+			messageSent = sendIntroMessage(clientSocket);
+			if(messageSent) {
+				introMessage = receiveIntroMessage(clientSocket);
+			}
+		} else {
+			introMessage = receiveIntroMessage(clientSocket);
+			if (introMessage != null) {
+				sendIntroMessage(clientSocket);
+			}
+		}
+		if (!messageSent || introMessage == null) 
+			return null;
+		if (!introMessage.getProtocol().equals(protocol.getName()))
+			return null;
+		return introMessage.getName();
+	}
+	
 	private void handleClient(Socket clientSocket) {
 		final Socket s = clientSocket;
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					// TODO add timeout.
-					// ObjectInputStream reader = new ObjectInputStream(s.getInputStream());
-					ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
-
-					// TODO: read request
-					//Object message = reader.readObject();
-					Log.e(TAG, "Database!");
-					String myname = dbh.readProperty(Property.HUGGLER_ID);
-					Log.d(TAG, "Preparing to write object " + myname);
-					writer.writeObject(myname);
-					Log.d(TAG, "Object written. ");
-					s.close();
+					String clientName = determineAndValidateReceiver(s, false);
+					protocol.answerClient(s, clientName);
 				} catch(Exception e) {
-					Log.w(TAG, "Unsuccesful exchange");
+					Log.d(TAG, "Unsuccesful exchange ("+ e.getMessage()+")");
+					for (StackTraceElement el : e.getStackTrace()) {				
+						Log.w(TAG, el.toString());
+					}
 				}
 			}
 		}).start();
