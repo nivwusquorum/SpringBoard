@@ -1,10 +1,11 @@
 package uk.ac.cam.cl.ss958.huggler;
 
-import android.content.ContentValues;
+import java.util.Random;
+
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 public class HugglerDatabase extends SQLiteOpenHelper {
 	 
@@ -16,73 +17,99 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "Huggler";
  
     // Debug Properties table
-    private static final String TABLE_DEBUG = "debug";
-    private static final String KEY_ID = "id";
-    private static final String KEY_PROPERTY = "property";
-    private static final String KEY_VALUE = "value";
-    public static final String DPROPERTY_DEVICE_BOOTS = "device_boots";
-    public static final String DPROPERTY_LOOKS_NUMBER = "looks";
+    private static final String TABLE_DEBUG = "debug_properties";
+    private static SqlKeyValueTable debug_table;
 
+    public enum DebugProperty {
+    	DEVICE_BOOTS ("device_boots"),
+    	LOOKS_NUMBER ("looks");
+    	
+    	private String name;
+    	
+    	public String getName() {
+    		return name;
+    	}
+    	
+    	DebugProperty(String name) {
+    		this.name = name;
+    	}
+    }
+    
+    // Debug Properties table
+    private static final String TABLE_PROPERTIES = "properties";
+    private static SqlKeyValueTable properties_table;
+    
+    public enum Property {
+    	HUGGLER_ID ("huggler_id");
+    	
+    	private String name;
+    	
+    	public String getName() {
+    		return name;
+    	}
+    	
+    	Property(String name) {
+    		this.name = name;
+    	}
+    }
     
     public HugglerDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        getReadableDatabase();
+        
     }
  
+    private boolean tables_initialized = false;
+    
+    public void initTables(SQLiteDatabase db) {
+    	if (!tables_initialized) {
+    		tables_initialized = true;
+	        debug_table = new SqlKeyValueTable(db, TABLE_DEBUG);
+	        properties_table = new SqlKeyValueTable(db, TABLE_PROPERTIES);
+    	}
+    }
+    
+    
+    @Override
+    public void onOpen(SQLiteDatabase db) {
+    	initTables(db);
+    }
+    
     // Creating Tables
     @Override
     public void onCreate(SQLiteDatabase db) {
+    	initTables(db);
     	// Create Table with debug properties
-        String CREATE_CONTACTS_TABLE = "CREATE TABLE " + TABLE_DEBUG + "("
-                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_PROPERTY + " TEXT,"
-                + KEY_VALUE + " TEXT" + ")";
-        db.execSQL(CREATE_CONTACTS_TABLE);
+        debug_table.create();
         
         // Initiate variable holding number of boots.
-        ContentValues values = new ContentValues();
-        values.put(KEY_PROPERTY, DPROPERTY_DEVICE_BOOTS); // Contact Name
-        values.put(KEY_VALUE, "0"); // Contact Phone Number
-        db.insert(TABLE_DEBUG, null, values);  
+        debug_table.insert(DebugProperty.DEVICE_BOOTS.getName(), "0");
         
         // Initiate variable holding number of triggered looks.
-        values = new ContentValues();
-        values.put(KEY_PROPERTY, DPROPERTY_LOOKS_NUMBER); // Contact Name
-        values.put(KEY_VALUE, "0"); // Contact Phone Number
-        db.insert(TABLE_DEBUG, null, values);  
-    }
-    
-    public int readDebugProperty(String debug_property) {
-    	// Read out current number of boots.
-    	SQLiteDatabase db = this.getWritableDatabase();
+        debug_table.insert(DebugProperty.LOOKS_NUMBER.getName(), "0");
         
-        Cursor cursor = db.query(TABLE_DEBUG, new String[] { KEY_ID,
-                KEY_PROPERTY, KEY_VALUE }, KEY_PROPERTY + "=?",
-                new String[] { debug_property}, null, null, null, null);
-        if (cursor != null)
-            cursor.moveToFirst();
-     
-        return Integer.parseInt(cursor.getString(2));
+    	// Create Table with normal properties
+        properties_table.create();        
+        
+        Random generator = new Random();
+        String randomId = "huggler_user" + generator.nextInt(1000);
+        properties_table.insert(Property.HUGGLER_ID.getName(), randomId);
     }
     
-    private int incrementNumericalProperty(String property) {
-    	// Read out current number of boots.
-    	SQLiteDatabase db = this.getWritableDatabase();
-    	
-    	ContentValues values = new ContentValues();
-    	values.put(KEY_PROPERTY, property);
-    	values.put(KEY_VALUE, String.valueOf(readDebugProperty(property) + 1));
-
-    	// updating row
-    	return db.update(TABLE_DEBUG, values, KEY_PROPERTY + " = ?",
-    			new String[] { property});
+    public String readProperty(Property p) {
+    	return properties_table.get(p.getName());
     }
     
-    public void onBoot() {
-    	incrementNumericalProperty(DPROPERTY_DEVICE_BOOTS);
+    public String readDebugProperty(DebugProperty d) {
+    	return debug_table.get(d.getName());
     }
     
-    public void onLookAround() {
-    	incrementNumericalProperty(DPROPERTY_LOOKS_NUMBER);
+    
+    public void incrementDebugProperty(DebugProperty d) {
+    	int new_value = Integer.parseInt(debug_table.get(d.getName()))+1;
+    	debug_table.update(d.getName(), String.valueOf(new_value));
     }
+    
  
     // Upgrading database
     @Override

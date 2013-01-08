@@ -1,0 +1,5 @@
+-> Stop service when no wifi
+-> Restart service when disconnected
+
+-> Service might not start when app is installed first (because there's no boot signal). Make it work (possible good solution check if service is running every time application is run).
+
