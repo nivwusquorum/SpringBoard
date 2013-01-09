@@ -1,6 +1,11 @@
 package uk.ac.cam.cl.ss958.springboard;
 
+import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import com.google.zxing.integration.android.*;
 
 import uk.ac.cam.cl.ss958.huggler.ChatMessage;
 import uk.ac.cam.cl.ss958.huggler.Huggler;
@@ -16,6 +21,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 
@@ -23,64 +29,111 @@ public class MainActivity extends Activity {
 	static final String TAG = "SpringBoard";
 	
 	HugglerDatabase dbh;
+
+	IntentIntegrator integrator;
 	
-	Handler chatHandler;
-	Runnable refreshChat;
-	
+	ViewLoader currentView = null;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
 		Intent service_intent = new Intent(this, Huggler.class);
 		startService(service_intent);	
-		setContentView(R.layout.activity_main);
-		dbh = new HugglerDatabase(this);
-		final TextView messageText = (TextView)findViewById(R.id.messageText);
-
-
-		Button button = (Button)findViewById(R.id.sendButton);
-		// Register the onClick listener with the implementation above
-		button.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				String user = dbh.readProperty(Property.HUGGLER_ID);
-				String message = messageText.getText().toString();
-				dbh.getMessageTable().addMessage(new ChatMessage(user,message));
-				messageText.setText("");
-			}
-		});
 		
-		final TextView messagesView = (TextView)findViewById(R.id.displayMessages);
-
-
-		chatHandler = new Handler();
-		refreshChat = new Runnable() {
-			@Override
-			public void run() {
-				String name = dbh.readProperty(Property.HUGGLER_ID);
-				String toDisplay = "What's up, " + name + "?\n";
-				List<ChatMessage> chatMessages = 
-						dbh.getMessageTable().get(10);
-				for(ChatMessage m : chatMessages) {
-					toDisplay = toDisplay +
-							"==> " + m.toString() + "\n";
-				}
-				messagesView.setText(toDisplay);
-				chatHandler.postDelayed(this, 1000);
+		dbh = new HugglerDatabase(this);
+		integrator = new IntentIntegrator(this);
+		
+		loadView(ViewToLoad.MAIN_VIEW);
+	}
+	
+	public enum ViewToLoad {
+		MAIN_VIEW(MainViewLoader.class),
+		QRCODE_VIEW(QrCodeViewLoader.class);
+		
+		Class loader;
+		
+		ViewToLoad(Class c) {
+			loader = c;
+		}
+		
+		public Class getLoader() {
+			return loader;
+		}
+		
+	}
+	
+	Map<ViewToLoad,ViewLoader> preallocatedView;
+	
+	public void loadView(ViewToLoad view) {
+		if (preallocatedView == null) {
+			preallocatedView = new HashMap<ViewToLoad,ViewLoader>();
+		}
+		
+		if (!preallocatedView.containsKey(view)) {
+			Constructor [] constructors = view.getLoader().getConstructors();
+			Object [] args = { this };
+			try {
+				preallocatedView.put(view, (ViewLoader)constructors[0].newInstance(args));
+			} catch(Exception e) {
+				Log.e(TAG, "Unable to instantiate ViewLoader class.");
 			}
-		};
-
+		}
+		
+		if(currentView != null) {
+			currentView.relieve();
+		}
+		
+		currentView = preallocatedView.get(view);
+		currentView.load();
+		currentView.resume();
+	}
+	
+	public void initiateBarcodeScanForFriend() {
+		integrator.initiateScan();
+	}
+	
+	public HugglerDatabase getDbh() {
+		return dbh;
+	}
+	
+	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+		// TODO what if this is different result
+		IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
+		if (scanResult != null) {
+			Log.e(TAG, "Scanned barcode: " + scanResult.getContents());
+		} else {
+			Log.e(TAG, "Failed to obtain QR code.");
+		}
+	}
+	
+	@Override
+	protected void onStart() {
+		super.onStart();
+		currentView.load();
 	}
 	
 	@Override
 	protected void onResume() {
 		super.onResume();
-		refreshChat.run();
+		currentView.resume();
 	}
 	
 	@Override
 	protected void onPause() {
 		super.onPause();
-		chatHandler.removeCallbacks(refreshChat);
+		currentView.pause();
+	}
+	
+	@Override
+	protected void onStop() {
+		super.onStop();
+		currentView.relieve();
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		dbh.close();
 	}
 
 	@Override

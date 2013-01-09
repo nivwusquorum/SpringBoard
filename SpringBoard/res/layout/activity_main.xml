@@ -4,14 +4,23 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity" >
 
+    <LinearLayout
+        android:id="@+id/autotext"
+        android:layout_width="0px"
+        android:layout_height="0px"
+        android:focusable="true"
+        android:focusableInTouchMode="true" />
+
     <TextView
         android:id="@+id/displayMessages"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_above="@+id/linearLayout1"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/messageText"
+        android:nextFocusLeft="@+id/autotext"
+        android:nextFocusUp="@+id/autotext"
         android:text="TextView" />
 
     <EditText
@@ -24,8 +33,6 @@
         android:layout_toLeftOf="@+id/sendButton"
         android:ems="10"
         android:hint="Type here..." >
-
-        <requestFocus />
     </EditText>
 
     <Button
@@ -35,5 +42,28 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:text="Send" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true" >
+
+        <Button
+            android:id="@+id/getfriend"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_weight="0.50"
+            android:text="Get Friend" />
+
+        <Button
+            android:id="@+id/befriend"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_weight="0.50"
+            android:text="Be Friend" />
+    </LinearLayout>
 
 </RelativeLayout>
