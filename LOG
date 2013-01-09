@@ -1,0 +1,6 @@
+9.01.2013
+sometimes huggler does not work one way, that's why users should sync both ways when connection is established.
+IDEA: possible speed up. Multicast frames are kept by router. go to sleep and wake up every 10 minutes. Broadcast wakeup times. for battery saver... might need to hack jmdns ;-(
+remember to check that chat messages are synched when springboard activity is not on the top
+
+

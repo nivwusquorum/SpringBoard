@@ -19,7 +19,7 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     // Debug Properties table
     private static final String TABLE_DEBUG = "debug_properties";
     private static SqlKeyValueTable debug_table;
-
+    
     public enum DebugProperty {
     	DEVICE_BOOTS ("device_boots"),
     	LOOKS_NUMBER ("looks");
@@ -53,10 +53,18 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     	}
     }
     
+    private static final String TABLE_MESSAGES = "chatmessages";
+    private static SQLChatMessagesTable messages_table;
+    
+    private SQLiteDatabase db;
+    
     public HugglerDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        getReadableDatabase();
-        
+        db = getWritableDatabase();
+    }
+    
+    public SQLiteDatabase getDb() {
+    	return db;
     }
  
     private boolean tables_initialized = false;
@@ -66,9 +74,13 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     		tables_initialized = true;
 	        debug_table = new SqlKeyValueTable(db, TABLE_DEBUG);
 	        properties_table = new SqlKeyValueTable(db, TABLE_PROPERTIES);
+	        messages_table = new SQLChatMessagesTable(db, TABLE_MESSAGES);
     	}
     }
     
+    public SQLChatMessagesTable getMessageTable() {
+    	return messages_table;
+    }
     
     @Override
     public void onOpen(SQLiteDatabase db) {
@@ -94,6 +106,8 @@ public class HugglerDatabase extends SQLiteOpenHelper {
         Random generator = new Random();
         String randomId = "huggler_user" + generator.nextInt(1000);
         properties_table.insert(Property.HUGGLER_ID.getName(), randomId);
+        
+        messages_table.create();
     }
     
     public String readProperty(Property p) {

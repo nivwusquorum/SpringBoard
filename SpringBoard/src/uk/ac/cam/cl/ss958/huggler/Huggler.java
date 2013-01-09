@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceEvent;
@@ -18,6 +19,7 @@ import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
 import android.app.IntentService;
 import android.app.Service;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.WifiManager.MulticastLock;
 import android.os.Handler;
 import android.os.IBinder;
@@ -58,6 +60,11 @@ public class Huggler extends Service {
 		protocol = new HugglerSpringBoardProtocol(this);
 	}
 
+    public HugglerDatabase getDb() {
+    	return dbh;
+    }	
+	
+	
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		if(!running) {
