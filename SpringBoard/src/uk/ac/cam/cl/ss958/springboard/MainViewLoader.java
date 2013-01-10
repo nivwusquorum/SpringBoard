@@ -1,8 +1,11 @@
 package uk.ac.cam.cl.ss958.springboard;
 
+import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.util.List;
 
 import uk.ac.cam.cl.ss958.huggler.ChatMessage;
+import uk.ac.cam.cl.ss958.huggler.EncodedChatMessage;
 import uk.ac.cam.cl.ss958.huggler.HugglerDatabase;
 import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
 import uk.ac.cam.cl.ss958.springboard.MainActivity.ViewToLoad;
@@ -50,8 +53,18 @@ public class MainViewLoader extends ViewLoader {
 			public void onClick(View v) {
 				String user = dbh.readProperty(Property.HUGGLER_ID);
 				String message = messageText.getText().toString();
-				dbh.getMessageTable().addMessage(new ChatMessage(user,message));
-				messageText.setText("");
+				KeyPair kp = activity.getDbh().getKeyPair();
+				try {
+					ChatMessage cm = new ChatMessage(user,message);
+					// EncodedChatMessage.testEncryption(cm, kp);
+					EncodedChatMessage ecm = 
+							new EncodedChatMessage(cm,
+									               kp.getPrivate());
+					dbh.getMessageTable().addEncodedMessage(ecm, kp.getPublic());
+					messageText.setText("");
+				} catch (Exception e) {
+					activity.showMessage("Unable to send message (" + e.getMessage() + ")");
+				}
 			}
 		});
 		

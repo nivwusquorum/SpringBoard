@@ -1,6 +1,12 @@
 package uk.ac.cam.cl.ss958.huggler;
 
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.Random;
+
+import uk.ac.cam.cl.ss958.springboard.FriendMessage;
+import uk.ac.cam.cl.ss958.toolkits.AsymmetricCryptoToolbox;
+import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -40,7 +46,8 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     private static SqlKeyValueTable properties_table;
     
     public enum Property {
-    	HUGGLER_ID ("huggler_id");
+    	HUGGLER_ID ("huggler_id"),
+    	KEYPAIR ("keypair");
     	
     	private String name;
     	
@@ -55,6 +62,9 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     
     private static final String TABLE_MESSAGES = "chatmessages";
     private static SQLChatMessagesTable messages_table;
+    
+    private static final String TABLE_FRIENDS = "friends";
+    private static SqlKeyValueTable friends_table;
     
     private SQLiteDatabase db;
     
@@ -75,6 +85,7 @@ public class HugglerDatabase extends SQLiteOpenHelper {
 	        debug_table = new SqlKeyValueTable(db, TABLE_DEBUG);
 	        properties_table = new SqlKeyValueTable(db, TABLE_PROPERTIES);
 	        messages_table = new SQLChatMessagesTable(db, TABLE_MESSAGES);
+	        friends_table = new SqlKeyValueTable(db, TABLE_FRIENDS);
     	}
     }
     
@@ -106,8 +117,50 @@ public class HugglerDatabase extends SQLiteOpenHelper {
         Random generator = new Random();
         String randomId = "huggler_user" + generator.nextInt(1000);
         properties_table.insert(Property.HUGGLER_ID.getName(), randomId);
+        KeyPair kp = null;
+        try {
+        	kp = AsymmetricCryptoToolbox.generateKeypair();
+        	String encodedKp = SerializableToolkit.toString(kp); 
+            properties_table.insert(Property.KEYPAIR.getName(), encodedKp);        	
+        } catch(Exception e) {
+        	Log.wtf("Huggler", "Unable to generate keypair(" + e.getMessage() + ")");
+        }
         
         messages_table.create();
+
+        friends_table.create();
+    }
+    
+    public boolean addFriend(FriendMessage fm) {
+    	try {
+    		return friends_table.insert(fm.getName(), 
+    			SerializableToolkit.toString(fm.getKey()));
+    	} catch (Exception e) {
+    		return false;
+    	}
+    }
+    
+    public PublicKey getKeyForFriend(String friend) {
+    	try {
+	    	String serializedKey = friends_table.get(friend);
+	    	if (serializedKey == null)
+	    		return null;
+	    	PublicKey key = 
+	    			(PublicKey)SerializableToolkit.fromString(serializedKey);
+	    	return key;
+    	} catch(Exception e) {
+    		return null;
+    	}
+    }
+    
+    public KeyPair getKeyPair() {
+    	try {
+    		String encodedKp = readProperty(Property.KEYPAIR);
+    		return (KeyPair)SerializableToolkit.fromString(encodedKp);
+    	} catch(Exception e) {
+    		Log.e("Huggler", "Cannot obtain keypair: (" + e.getMessage() + ")");
+    		return null;
+    	}
     }
     
     public String readProperty(Property p) {

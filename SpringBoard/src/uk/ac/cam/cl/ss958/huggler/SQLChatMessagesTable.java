@@ -1,8 +1,11 @@
 package uk.ac.cam.cl.ss958.huggler;
 
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -18,6 +21,8 @@ public class SQLChatMessagesTable {
 	private static final String KEY_WHEN = "date";
 	private static final String KEY_USER = "user";
 	private static final String KEY_MESSAGE = "message";
+	private static final String KEY_ENCODED_MESSAGE = "encoded_message";
+
 	private static final String[] allColumns = 
 		{ KEY_ID, KEY_WHEN, KEY_USER, KEY_MESSAGE };
 
@@ -27,27 +32,48 @@ public class SQLChatMessagesTable {
 	}
 
 	public void create() {
-		String CREATE_DPROPERTIES_TABLE = 
-				"CREATE TABLE " + name + "("+ 
+		String CREATE_CHAT_TABLE = 
+				"CREATE TABLE " + name + "_normal" + "("+ 
 			    KEY_ID + " INTEGER," + 
 				KEY_WHEN + " INTEGER," +
 				KEY_USER + " TEXT," + 
 				KEY_MESSAGE + " TEXT, " +
 				"PRIMARY KEY (" + KEY_USER + "," + KEY_WHEN + ")"+ ")";
-		db.execSQL(CREATE_DPROPERTIES_TABLE);
+		db.execSQL(CREATE_CHAT_TABLE);
+		
+		String CREATE_ECHAT_TABLE = 
+				"CREATE TABLE " + name + "_encoded" + "("+ 
+			    KEY_ID + " INTEGER PRIMARY KEY," +
+				KEY_ENCODED_MESSAGE + " TEXT" + ")";
+		db.execSQL(CREATE_ECHAT_TABLE);
 	}
 
-	public void addMessage(ChatMessage m) {
+	public void addEncodedMessage(EncodedChatMessage ecm, PublicKey key) {
+		try {
+			ContentValues values = new ContentValues();
+			String serializedEcm = SerializableToolkit.toString(ecm);
+			values.put(KEY_ENCODED_MESSAGE, serializedEcm);	
+			db.insertOrThrow(name + "_encoded", null, values);
+			addMessage(ecm.getChatMessage(key));
+		} catch(Exception e) {
+			Log.d("Huggler", "Problem decoding message (" + e.getMessage() + ")");
+			for(StackTraceElement el : e.getStackTrace()) {
+				Log.d("Huggler", el.toString());
+			}
+		}
+	}
+	
+	
+	private void addMessage(ChatMessage m) {
 		ContentValues values = new ContentValues();
 		values.put(KEY_USER, m.getUser());
 		values.put(KEY_MESSAGE, m.getMessage());
 		values.put(KEY_WHEN, m.getTimestamp().getTime());
 		try {
-			db.insertOrThrow(name, null, values);
+			db.insertOrThrow(name +"_normal", null, values);
 		} catch(android.database.sqlite.SQLiteConstraintException e) {
 			// Log.d(TAG, "Duplicate message (hopefully).");
 		}
-
 	}
 	
 
@@ -55,7 +81,7 @@ public class SQLChatMessagesTable {
 		List<ChatMessage> result = new ArrayList<ChatMessage>();
 		
 		String maybeLimit = (limit == null) ? null : String.valueOf(limit); 
-		Cursor cursor = db.query(name,
+		Cursor cursor = db.query(name + "_normal",
 								 allColumns, null, null, null, 
 								 null, KEY_WHEN + " DESC", maybeLimit );
 
@@ -71,6 +97,25 @@ public class SQLChatMessagesTable {
 		// Make sure to close the cursor
 		cursor.close();
 		return result;
+	}
+	
+	public List<EncodedChatMessage> getEncoded() {
+		try {
+			Cursor cursor = db.query(name + "_encoded",
+					 new String[] {KEY_ID, KEY_ENCODED_MESSAGE }, null, null, null, 
+					 null, null, null );
+			cursor.moveToFirst();
+			List<EncodedChatMessage> result = new ArrayList<EncodedChatMessage>();
+			while (!cursor.isAfterLast()) {
+				EncodedChatMessage ecm = 
+					(EncodedChatMessage) SerializableToolkit.fromString(cursor.getString(1));
+				result.add(ecm);
+				cursor.moveToNext();
+			}
+			return result;
+		} catch(Exception e) {
+			return null;
+		}
 	}
 
 }

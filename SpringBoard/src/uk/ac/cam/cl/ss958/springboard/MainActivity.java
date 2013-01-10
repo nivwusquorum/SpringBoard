@@ -1,5 +1,6 @@
 package uk.ac.cam.cl.ss958.springboard;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.List;
@@ -13,9 +14,12 @@ import uk.ac.cam.cl.ss958.huggler.HugglerConfig;
 import uk.ac.cam.cl.ss958.huggler.HugglerDatabase;
 import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.DebugProperty;
 import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
+import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.util.Log;
 import android.view.Menu;
@@ -59,7 +63,6 @@ public class MainActivity extends Activity {
 		public Class getLoader() {
 			return loader;
 		}
-		
 	}
 	
 	Map<ViewToLoad,ViewLoader> preallocatedView;
@@ -96,11 +99,51 @@ public class MainActivity extends Activity {
 		return dbh;
 	}
 	
+	Handler messageHandler;
+	
+	public void showMessage(String message) {
+		final String mes = message;
+		if(messageHandler == null) { 
+			messageHandler = new Handler();
+		}
+		final Activity self = this;
+		Log.d(TAG, "showMessage: " + mes);
+
+		Runnable r = new Runnable() {
+			@Override
+			public void run() {
+				final AlertDialog dialog = 
+						new AlertDialog.Builder(self).setMessage(mes)
+						.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								dialog.dismiss();
+							}
+						}).create();
+				dialog.show();				
+			}
+		};
+		
+		r.run();
+	}
+	
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		// TODO what if this is different result
 		IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
 		if (scanResult != null) {
-			Log.e(TAG, "Scanned barcode: " + scanResult.getContents());
+			try {
+				String todo = scanResult.getContents();
+
+				FriendMessage fm = (FriendMessage)SerializableToolkit.fromString(todo);
+				if(dbh.addFriend(fm)) {
+					showMessage(fm.getName() + " added as a friend.");
+				} else {
+					showMessage(fm.getName() + " is already a friend.");
+				}
+			} catch (Exception e) {
+				
+				e.printStackTrace();
+			}
 		} else {
 			Log.e(TAG, "Failed to obtain QR code.");
 		}

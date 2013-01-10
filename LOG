@@ -4,4 +4,12 @@ IDEA: possible speed up. Multicast frames are kept by router. go to sleep and wa
 remember to check that chat messages are synched when springboard activity is not on the top
 chat over opportunistic communication now works
 next steps: encryption, bluetooth
+OK, QR code now work + I managed to wrote a nice code to swich view (reflection is awesome!)
 
+NEXT STEP: use elliptic curve crypto to encode messages. 
+NEXT PROBLEM: connection refused - rewrite to make sure you are closing all sockets, check out stack overflow question.
+
+10.01.2013
+NEXT STEP: should probably move keypair to separate SpringBoard database.
+NEXT STEP: Make RSA work with Padding.
+MILESTONE: The project now allows to chat over local network and use qr codes to exchange public keys and share messages.

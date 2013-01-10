@@ -311,6 +311,11 @@ public class Huggler extends Service {
     	}
         multicastLock.release();
 		
+        try {
+			server.close();
+		} catch (IOException e) {
+		}
+        
 		dbh.close();
 		if(running) {			
 			running = false;

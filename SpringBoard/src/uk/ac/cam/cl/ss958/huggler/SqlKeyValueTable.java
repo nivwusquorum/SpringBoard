@@ -20,16 +20,22 @@ public class SqlKeyValueTable {
 	
 	public void create() {
 		String CREATE_DPROPERTIES_TABLE = "CREATE TABLE " + name + "("
-                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_PROPERTY + " TEXT,"
-                + KEY_VALUE + " TEXT" + ")";
+                + KEY_ID + " INTEGER," + KEY_PROPERTY + " TEXT,"
+                + KEY_VALUE + " TEXT," +
+                "PRIMARY KEY (" + KEY_PROPERTY +")" + ")";
         db.execSQL(CREATE_DPROPERTIES_TABLE);
 	}
 	
-	public void insert(String key, String value) {
-        ContentValues values = new ContentValues();
-        values.put(KEY_PROPERTY, key);
-        values.put(KEY_VALUE, value);
-        db.insert(name, null, values);  
+	public boolean insert(String key, String value) {
+		try {
+	        ContentValues values = new ContentValues();
+	        values.put(KEY_PROPERTY, key);
+	        values.put(KEY_VALUE, value);
+	        db.insertOrThrow(name, null, values);  
+	        return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 	
 	public String get(String key) {
@@ -37,10 +43,12 @@ public class SqlKeyValueTable {
 	    Cursor cursor = db.query(name, new String[] { KEY_ID,
 	            KEY_PROPERTY, KEY_VALUE }, KEY_PROPERTY + "=?",
 	            new String[] { key}, null, null, null, null);
-	    if (cursor != null)
-	        cursor.moveToFirst();
-	 
-	    return cursor.getString(2);
+	    if (cursor != null && cursor.moveToFirst()) {
+	    	return cursor.getString(2);
+	    } else {
+	    	// Key nonexistent.
+	    	return null;
+	    }
 	}
 	
 	public int update(String key, String value) {

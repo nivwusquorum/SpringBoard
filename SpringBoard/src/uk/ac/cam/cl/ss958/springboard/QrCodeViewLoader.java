@@ -1,7 +1,13 @@
 package uk.ac.cam.cl.ss958.springboard;
 
+import java.lang.reflect.Field;
+import java.security.KeyPair;
+
+import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
 import uk.ac.cam.cl.ss958.springboard.MainActivity.ViewToLoad;
+import android.graphics.Point;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -15,7 +21,6 @@ public class QrCodeViewLoader extends ViewLoader {
 	private static final String TAG = "Springboard";
 
 	Button backToMain;
-
 	
 	@Override
 	protected void onCreate() {
@@ -32,7 +37,15 @@ public class QrCodeViewLoader extends ViewLoader {
 		});
 		
 		try {
-			qrcodeImage.setImageBitmap(QRGenerator.generate());
+			String username = activity.getDbh().readProperty(Property.HUGGLER_ID);
+			KeyPair kp = activity.getDbh().getKeyPair();
+			
+			Display display = activity.getWindowManager().getDefaultDisplay();
+			// TODO make sure it works on new devices. (4.0)
+			int width = display.getWidth();
+			int height = display.getHeight()*8/10; // * 80%
+
+			qrcodeImage.setImageBitmap(QRGenerator.generate(username, kp, width, height));
 		} catch(Exception e) {
 			Log.e(TAG, "Unable to generate barcode");
 		}		
