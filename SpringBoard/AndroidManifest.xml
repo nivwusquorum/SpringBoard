@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
-
+ 
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -30,7 +30,9 @@
             </intent-filter>
         </activity>
         <service android:name="uk.ac.cam.cl.ss958.huggler.Huggler" 
-                 android:exported="false"/>
+                 android:exported="false">
+           
+        </service>
         <receiver android:name="uk.ac.cam.cl.ss958.huggler.HugglerIntentReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

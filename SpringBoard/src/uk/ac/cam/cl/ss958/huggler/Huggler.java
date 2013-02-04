@@ -3,9 +3,13 @@ package uk.ac.cam.cl.ss958.huggler;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.List;
 
 import javax.jmdns.JmDNS;
@@ -20,6 +24,7 @@ import android.app.IntentService;
 import android.app.Service;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager.MulticastLock;
 import android.os.Handler;
 import android.os.IBinder;
@@ -130,13 +135,16 @@ public class Huggler extends Service {
 	private JmDNS jmdns = null;
 	private ServiceInfo serviceInfo;
 	private MulticastLock multicastLock; 
-		
+	
+	
 	private void setUpJmdns() {
 		android.net.wifi.WifiManager wifi = (android.net.wifi.WifiManager) getSystemService(android.content.Context.WIFI_SERVICE);
 		multicastLock = wifi.createMulticastLock("mylockthereturn");
 		multicastLock.setReferenceCounted(true);
 		multicastLock.acquire();
 		try {
+			
+			// handle not being connected to wifi you idiot!
             jmdns = JmDNS.create();
             jmdns.addServiceListener(jmdnsType, jmdnsListener = new ServiceListener() {
                 @Override

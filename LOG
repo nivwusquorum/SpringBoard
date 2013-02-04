@@ -13,3 +13,4 @@ NEXT PROBLEM: connection refused - rewrite to make sure you are closing all sock
 NEXT STEP: should probably move keypair to separate SpringBoard database.
 NEXT STEP: Make RSA work with Padding.
 MILESTONE: The project now allows to chat over local network and use qr codes to exchange public keys and share messages.
+NEXT STEP: Ask for username.
