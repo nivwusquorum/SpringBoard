@@ -1,4 +1,4 @@
-package uk.ac.cam.cl.ss958.huggler;
+package uk.ac.cam.cl.ss958.huggler.databases;
 
 import android.content.ContentValues;
 import android.database.Cursor;

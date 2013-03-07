@@ -11,9 +11,10 @@ import com.google.zxing.integration.android.*;
 import uk.ac.cam.cl.ss958.huggler.ChatMessage;
 import uk.ac.cam.cl.ss958.huggler.Huggler;
 import uk.ac.cam.cl.ss958.huggler.HugglerConfig;
-import uk.ac.cam.cl.ss958.huggler.HugglerDatabase;
-import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.DebugProperty;
-import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.DebugProperty;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.Property;
+import uk.ac.cam.cl.ss958.springboard_huggler.SpringBoardHugglerService;
 import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,10 +42,12 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		Intent service_intent = new Intent(this, Huggler.class);
-		startService(service_intent);	
+		HugglerDatabase.init(this);
+		dbh = HugglerDatabase.get();
 		
-		dbh = new HugglerDatabase(this);
+		Intent service_intent = new Intent(this, SpringBoardHugglerService.class);
+		startService(service_intent);	
+
 		integrator = new IntentIntegrator(this);
 		
 		loadView(ViewToLoad.MAIN_VIEW);
@@ -95,10 +98,6 @@ public class MainActivity extends Activity {
 		integrator.initiateScan();
 	}
 	
-	public HugglerDatabase getDbh() {
-		return dbh;
-	}
-	
 	Handler messageHandler;
 	
 	public void showMessage(String message) {
@@ -135,7 +134,7 @@ public class MainActivity extends Activity {
 				String todo = scanResult.getContents();
 
 				FriendMessage fm = (FriendMessage)SerializableToolkit.fromString(todo);
-				if(dbh.addFriend(fm)) {
+				if(dbh.getFriendsTable().addFriend(fm)) {
 					showMessage(fm.getName() + " added as a friend.");
 				} else {
 					showMessage(fm.getName() + " is already a friend.");

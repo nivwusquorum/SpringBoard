@@ -29,11 +29,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name="uk.ac.cam.cl.ss958.huggler.Huggler" 
+        <service android:name="uk.ac.cam.cl.ss958.springboard_huggler.SpringBoardHugglerService" 
                  android:exported="false">
-           
         </service>
-        <receiver android:name="uk.ac.cam.cl.ss958.huggler.HugglerIntentReceiver" >
+        <receiver android:name="uk.ac.cam.cl.ss958.springboard_huggler.IntentReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <category android:name="android.intent.category.DEFAULT" />

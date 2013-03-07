@@ -3,7 +3,8 @@ package uk.ac.cam.cl.ss958.springboard;
 import java.lang.reflect.Field;
 import java.security.KeyPair;
 
-import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.Property;
 import uk.ac.cam.cl.ss958.springboard.MainActivity.ViewToLoad;
 import android.graphics.Point;
 import android.util.Log;
@@ -37,8 +38,9 @@ public class QrCodeViewLoader extends ViewLoader {
 		});
 		
 		try {
-			String username = activity.getDbh().readProperty(Property.HUGGLER_ID);
-			KeyPair kp = activity.getDbh().getKeyPair();
+			HugglerDatabase hdb = HugglerDatabase.get();
+			String username = hdb.readProperty(Property.HUGGLER_ID);
+			KeyPair kp = hdb.getMyKeyPair();
 			
 			Display display = activity.getWindowManager().getDefaultDisplay();
 			// TODO make sure it works on new devices. (4.0)

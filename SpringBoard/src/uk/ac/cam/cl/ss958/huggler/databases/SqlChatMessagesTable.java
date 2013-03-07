@@ -1,10 +1,12 @@
-package uk.ac.cam.cl.ss958.huggler;
+package uk.ac.cam.cl.ss958.huggler.databases;
 
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import uk.ac.cam.cl.ss958.huggler.ChatMessage;
+import uk.ac.cam.cl.ss958.huggler.EncodedChatMessage;
 import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 
 import android.content.ContentValues;
@@ -12,7 +14,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
-public class SQLChatMessagesTable {
+public class SqlChatMessagesTable {
 	private static final String TAG = "Huggler";
 	private SQLiteDatabase db;
 	private String name;
@@ -26,7 +28,7 @@ public class SQLChatMessagesTable {
 	private static final String[] allColumns = 
 		{ KEY_ID, KEY_WHEN, KEY_USER, KEY_MESSAGE };
 
-	SQLChatMessagesTable(SQLiteDatabase db, String name) {
+	SqlChatMessagesTable(SQLiteDatabase db, String name) {
 		this.name = name;
 		this.db = db;
 	}

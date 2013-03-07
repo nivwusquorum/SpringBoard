@@ -6,8 +6,8 @@ import java.util.List;
 
 import uk.ac.cam.cl.ss958.huggler.ChatMessage;
 import uk.ac.cam.cl.ss958.huggler.EncodedChatMessage;
-import uk.ac.cam.cl.ss958.huggler.HugglerDatabase;
-import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.Property;
 import uk.ac.cam.cl.ss958.springboard.MainActivity.ViewToLoad;
 import android.app.Activity;
 import android.os.Handler;
@@ -37,7 +37,7 @@ public class MainViewLoader extends ViewLoader {
 	protected void onCreate() {
 		activity.setContentView(R.layout.activity_main); 
 
-		dbh = activity.getDbh();
+		dbh = HugglerDatabase.get();
 		
 		final TextView messageText = (TextView)activity.findViewById(R.id.messageText);
 
@@ -53,7 +53,7 @@ public class MainViewLoader extends ViewLoader {
 			public void onClick(View v) {
 				String user = dbh.readProperty(Property.HUGGLER_ID);
 				String message = messageText.getText().toString();
-				KeyPair kp = activity.getDbh().getKeyPair();
+				KeyPair kp = dbh.getMyKeyPair();
 				try {
 					ChatMessage cm = new ChatMessage(user,message);
 					// EncodedChatMessage.testEncryption(cm, kp);
@@ -89,6 +89,9 @@ public class MainViewLoader extends ViewLoader {
 		refreshChat = new Runnable() {
 			@Override
 			public void run() {
+				if (dbh == null) {
+					Log.wtf("Huggler", "DBH is not initialized.");
+				}
 				String name = dbh.readProperty(Property.HUGGLER_ID);
 				String toDisplay = "What's up, " + name + "?\n";
 				toDisplay += "Remember that you need to add person as a friend before you can receive that person's messages!\n";

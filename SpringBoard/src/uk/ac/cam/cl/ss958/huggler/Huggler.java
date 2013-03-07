@@ -18,10 +18,12 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
 
-import uk.ac.cam.cl.ss958.huggler.HugglerDatabase.Property;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.Property;
 
 import android.app.IntentService;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.wifi.WifiInfo;
@@ -31,23 +33,20 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
-public class Huggler extends Service {
+public class Huggler {
 
 	private static final String TAG = "Huggler";
-	
-	private boolean running;
+
 	HugglerDatabase dbh;
-	
+
 	private Handler askingHandler;
 	private Runnable runAsk;
 
 	private HugglerProtocol protocol;
-	@Override
-	public void onCreate() {
-		System.setProperty("java.net.preferIPv4Stack", "true");
-		System.setProperty("java.net.preferIPv6Stack", "false");
-
-		running = false;
+	private Context context;
+	
+	public Huggler(Context context) {
+		this.context = context;
 		askingHandler = new Handler();
 		runAsk = new Runnable() {
 			@Override
@@ -62,25 +61,14 @@ public class Huggler extends Service {
 						60 * 1000 * HugglerConfig.UPDATE_INTERVAL_M);
 			}
 		};
-		protocol = new HugglerSpringBoardProtocol(this);
+		protocol = new HugglerSpringBoardProtocol();
 	}
 
-    public HugglerDatabase getDb() {
-    	return dbh;
-    }	
-	
-	
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		if(!running) {
-			// concurrency bug very unlikely
-			running = true;
-			Toast.makeText(this, "Huggler service started. ", Toast.LENGTH_SHORT).show();
-			dbh = new HugglerDatabase(getApplicationContext());
-			initialize();
-		}
-		// If we get killed, after returning from here, restart
-		return START_STICKY;
+
+	public void start() {
+		HugglerDatabase.init(context);
+		dbh = HugglerDatabase.get();
+		initialize();
 	}
 
 	private void initialize() {
@@ -91,7 +79,7 @@ public class Huggler extends Service {
 				startAnswering();
 			}
 		});
-		
+
 		Thread discovery = new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -129,41 +117,41 @@ public class Huggler extends Service {
 			Log.e(TAG, " Disconnected... ");
 		}	
 	}
-	
+
 	private ServiceListener jmdnsListener;
 	private String jmdnsType = "_huggler._tcp.local.";
 	private JmDNS jmdns = null;
 	private ServiceInfo serviceInfo;
 	private MulticastLock multicastLock; 
-	
-	
+
+
 	private void setUpJmdns() {
-		android.net.wifi.WifiManager wifi = (android.net.wifi.WifiManager) getSystemService(android.content.Context.WIFI_SERVICE);
+		android.net.wifi.WifiManager wifi = (android.net.wifi.WifiManager) context.getSystemService(android.content.Context.WIFI_SERVICE);
 		multicastLock = wifi.createMulticastLock("mylockthereturn");
 		multicastLock.setReferenceCounted(true);
 		multicastLock.acquire();
 		try {
-			
+
 			// handle not being connected to wifi you idiot!
-            jmdns = JmDNS.create();
-            jmdns.addServiceListener(jmdnsType, jmdnsListener = new ServiceListener() {
-                @Override
-                public void serviceResolved(ServiceEvent ev) {
-                	Log.d(TAG, "==>  Listener: resolved " + ev.getName());
-                }
+			jmdns = JmDNS.create();
+			jmdns.addServiceListener(jmdnsType, jmdnsListener = new ServiceListener() {
+				@Override
+				public void serviceResolved(ServiceEvent ev) {
+					Log.d(TAG, "==>  Listener: resolved " + ev.getName());
+				}
 
-                @Override
-                public void serviceRemoved(ServiceEvent ev) {
-                }
+				@Override
+				public void serviceRemoved(ServiceEvent ev) {
+				}
 
-                @Override
-                public void serviceAdded(ServiceEvent ev) {
-                    // Required to force serviceResolved to be called again (after the first search)
-                    jmdns.requestServiceInfo(ev.getType(), ev.getName(), 1);
-                }
-            });
-            
-            jmdns.registerServiceType(jmdnsType);
+				@Override
+				public void serviceAdded(ServiceEvent ev) {
+					// Required to force serviceResolved to be called again (after the first search)
+					jmdns.requestServiceInfo(ev.getType(), ev.getName(), 1);
+				}
+			});
+
+			jmdns.registerServiceType(jmdnsType);
 			String huggler_id = dbh.readProperty(Property.HUGGLER_ID);
 			serviceInfo = ServiceInfo.create(jmdnsType, huggler_id, server.getLocalPort(), " Huggler service for opportunistic communication.");
 
@@ -175,14 +163,14 @@ public class Huggler extends Service {
 		}
 
 	}
-	
-	
+
+
 	private void startAsking() {
 		runAsk.run();
 	}
-	
-	
-	
+
+
+
 	private void ask() {
 		Log.d(TAG, "Started asking");
 		for(ServiceInfo si : jmdns.list(jmdnsType, 6000)) { // timeout: 6s
@@ -204,7 +192,7 @@ public class Huggler extends Service {
 				Socket s = new Socket(si.getInet4Addresses()[0], si.getPort());
 
 				String clientName = determineAndValidateReceiver(s, true);
-				
+
 				protocol.askClient(s, clientName); 
 			} catch (Throwable e) {
 				Log.w(TAG, "Cannot communicate with discovered peer (" +e.getMessage() + "). ");
@@ -215,16 +203,16 @@ public class Huggler extends Service {
 		}
 		Log.d(TAG, "Done asking");
 	}
-	
+
 
 	public String getUserName() {
 		return dbh.readProperty(Property.HUGGLER_ID);
 	}
-	
+
 	private HugglerIntroMessage receiveIntroMessage(Socket clientSocket) {
 		try {
 			ObjectInputStream reader = new ObjectInputStream(clientSocket.getInputStream());
-			
+
 			Object message = reader.readObject();
 			HugglerIntroMessage introMessage;
 			if(message instanceof HugglerIntroMessage) {
@@ -238,14 +226,14 @@ public class Huggler extends Service {
 			return null;
 		}
 	}
-	
+
 	private boolean sendIntroMessage(Socket clientSocket) {
 		try {
 			ObjectOutputStream writer = new ObjectOutputStream(clientSocket.getOutputStream());
-	
+
 			HugglerIntroMessage introMessage =
 					new HugglerIntroMessage(protocol.getName(),
-											getUserName());
+							getUserName());
 			writer.writeObject(introMessage);
 			return true;
 		} catch(Exception e) {
@@ -253,7 +241,7 @@ public class Huggler extends Service {
 			return false;
 		}
 	}
-	
+
 	private String determineAndValidateReceiver(Socket clientSocket, boolean initiating) {
 		HugglerIntroMessage introMessage = null;
 		boolean messageSent = false;
@@ -274,7 +262,7 @@ public class Huggler extends Service {
 			return null;
 		return introMessage.getName();
 	}
-	
+
 	private void handleClient(Socket clientSocket) {
 		final Socket s = clientSocket;
 		new Thread(new Runnable() {
@@ -295,39 +283,30 @@ public class Huggler extends Service {
 
 	private ServerSocket server;
 
-	@Override
-	public IBinder onBind(Intent intent) {
-		// We don't provide binding, so return null
-		return null;
-	}
 
-	@Override
-	public void onDestroy() {
-    	if (jmdns != null) {
-            if (jmdnsListener != null) {
-                jmdns.removeServiceListener(jmdnsType, jmdnsListener);
-                jmdnsListener = null;
-            }
-            jmdns.unregisterAllServices();
-            try {
-                jmdns.close();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            jmdns = null;
-    	}
-        multicastLock.release();
-		
-        try {
+	public void destroy() {
+		if (jmdns != null) {
+			if (jmdnsListener != null) {
+				jmdns.removeServiceListener(jmdnsType, jmdnsListener);
+				jmdnsListener = null;
+			}
+			jmdns.unregisterAllServices();
+			try {
+				jmdns.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			jmdns = null;
+		}
+		multicastLock.release();
+
+		try {
 			server.close();
 		} catch (IOException e) {
 		}
-        
+
 		dbh.close();
-		if(running) {			
-			running = false;
-			Toast.makeText(this, "Huggler service stopped.", Toast.LENGTH_SHORT).show(); 
-		}
+
 	}
 }

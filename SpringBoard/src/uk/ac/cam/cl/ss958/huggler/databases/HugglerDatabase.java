@@ -1,4 +1,4 @@
-package uk.ac.cam.cl.ss958.huggler;
+package uk.ac.cam.cl.ss958.huggler.databases;
 
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -13,9 +13,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+// SINGLETON
 public class HugglerDatabase extends SQLiteOpenHelper {
-	 
-    // All Static variables
+	private static final String TAG = "Huggler"; 
+	
+	private static HugglerDatabase instance = null;
+	
     // Database Version
     private static final int DATABASE_VERSION = 1;
  
@@ -23,7 +26,7 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "Huggler";
  
     // Debug Properties table
-    private static final String TABLE_DEBUG = "debug_properties";
+    private static final String DEBUG_TABLE_NAME = "debug_properties";
     private static SqlKeyValueTable debug_table;
     
     public enum DebugProperty {
@@ -42,7 +45,7 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     }
     
     // Debug Properties table
-    private static final String TABLE_PROPERTIES = "properties";
+    private static final String PROPERTIES_TABLE_NAME = "properties";
     private static SqlKeyValueTable properties_table;
     
     public enum Property {
@@ -61,35 +64,50 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     }
     
     private static final String TABLE_MESSAGES = "chatmessages";
-    private static SQLChatMessagesTable messages_table;
+    private static SqlChatMessagesTable messages_table;
     
     private static final String TABLE_FRIENDS = "friends";
-    private static SqlKeyValueTable friends_table;
+    private static SqlFriendsTable friends_table;
     
     private SQLiteDatabase db;
     
-    public HugglerDatabase(Context context) {
+    private HugglerDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
         db = getWritableDatabase();
     }
     
-    public SQLiteDatabase getDb() {
-    	return db;
+    public static void init(Context context) {
+    	if(instance == null) {
+    		instance = new HugglerDatabase(context);
+    	} else {
+    		Log.w(TAG, "Database initialized multiple times!");
+    	}
     }
+    
+    public static HugglerDatabase get() {
+    	if (instance != null) {
+    		return instance;
+    	} else {
+    		Log.wtf(TAG, "HugglerDatabase get called before init!");
+    		android.os.Process.killProcess(android.os.Process.myPid());
+    		return null;
+    	}
+    }
+    
  
     private boolean tables_initialized = false;
     
     public void initTables(SQLiteDatabase db) {
     	if (!tables_initialized) {
     		tables_initialized = true;
-	        debug_table = new SqlKeyValueTable(db, TABLE_DEBUG);
-	        properties_table = new SqlKeyValueTable(db, TABLE_PROPERTIES);
-	        messages_table = new SQLChatMessagesTable(db, TABLE_MESSAGES);
-	        friends_table = new SqlKeyValueTable(db, TABLE_FRIENDS);
+	        debug_table = new SqlKeyValueTable(db, DEBUG_TABLE_NAME);
+	        properties_table = new SqlKeyValueTable(db, PROPERTIES_TABLE_NAME);
+	        messages_table = new SqlChatMessagesTable(db, TABLE_MESSAGES);
+	        friends_table = new SqlFriendsTable(db, TABLE_FRIENDS);
     	}
     }
     
-    public SQLChatMessagesTable getMessageTable() {
+    public SqlChatMessagesTable getMessageTable() {
     	return messages_table;
     }
     
@@ -131,29 +149,9 @@ public class HugglerDatabase extends SQLiteOpenHelper {
         friends_table.create();
     }
     
-    public boolean addFriend(FriendMessage fm) {
-    	try {
-    		return friends_table.insert(fm.getName(), 
-    			SerializableToolkit.toString(fm.getKey()));
-    	} catch (Exception e) {
-    		return false;
-    	}
-    }
     
-    public PublicKey getKeyForFriend(String friend) {
-    	try {
-	    	String serializedKey = friends_table.get(friend);
-	    	if (serializedKey == null)
-	    		return null;
-	    	PublicKey key = 
-	    			(PublicKey)SerializableToolkit.fromString(serializedKey);
-	    	return key;
-    	} catch(Exception e) {
-    		return null;
-    	}
-    }
     
-    public KeyPair getKeyPair() {
+    public KeyPair getMyKeyPair() {
     	try {
     		String encodedKp = readProperty(Property.KEYPAIR);
     		return (KeyPair)SerializableToolkit.fromString(encodedKp);
@@ -177,6 +175,9 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     	debug_table.update(d.getName(), String.valueOf(new_value));
     }
     
+    public SqlFriendsTable getFriendsTable() {
+    	return friends_table;
+    }
  
     // Upgrading database
     @Override

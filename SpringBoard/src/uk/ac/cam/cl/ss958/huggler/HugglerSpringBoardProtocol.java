@@ -8,15 +8,17 @@ import java.net.Socket;
 import java.security.PublicKey;
 import java.util.List;
 
+import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
+
 import android.util.Log;
 
 public class HugglerSpringBoardProtocol implements HugglerProtocol {
 	static String TAG = "Huggler";
 	
-	Huggler parent;
+	HugglerDatabase dbh;
 	
-	public HugglerSpringBoardProtocol(Huggler parent) {
-		this.parent = parent;
+	public HugglerSpringBoardProtocol() {
+		dbh = HugglerDatabase.get();
 	}
 	
 	@Override
@@ -51,7 +53,7 @@ public class HugglerSpringBoardProtocol implements HugglerProtocol {
 	}
 	
 	private void sendMessages(Socket s) throws Exception {
-		Object payload = parent.getDb().getMessageTable().getEncoded();
+		Object payload = dbh.getMessageTable().getEncoded();
 		ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
 		writer.writeObject(payload);
 	}
@@ -63,12 +65,12 @@ public class HugglerSpringBoardProtocol implements HugglerProtocol {
 			for(Object o: (List)message) {
 				if(o instanceof EncodedChatMessage) {
 					EncodedChatMessage ecm = (EncodedChatMessage)o;
-					PublicKey pk = parent.getDb().getKeyForFriend(ecm.getUser());
+					PublicKey pk = dbh.getFriendsTable().getKeyForFriend(ecm.getUser());
 					if (pk == null) {
 						Log.d("Huggler", "Received message, that I cannot decrypt");
 						continue;
 					}
-					parent.getDb().getMessageTable().addEncodedMessage(ecm, pk);
+					dbh.getMessageTable().addEncodedMessage(ecm, pk);
 				} else {
 					Log.e("Huggler", "Not EncodedMessage!");
 				}
