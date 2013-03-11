@@ -11,21 +11,21 @@ public abstract class ViewLoader {
 		this.activity = activity;
 	}
 	
-	public void load() {
+	public final void load() {
 		onCreate();
 		paused = true;
 	}
-	public void resume() {
+	public final void resume() {
 		onResume();
 		paused = false;
 	}
 	
-	public void pause() {
+	public final void pause() {
 		onPause();
 		paused = true;
 	}
 	
-	public void relieve() {
+	public final void relieve() {
 		if(!paused) {
 			onPause();
 			paused = true;

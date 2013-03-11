@@ -45,9 +45,11 @@ public class MainActivity extends Activity {
 		HugglerDatabase.init(this);
 		dbh = HugglerDatabase.get();
 		
+		// Make sure service is running
 		Intent service_intent = new Intent(this, SpringBoardHugglerService.class);
 		startService(service_intent);	
 
+		
 		integrator = new IntentIntegrator(this);
 		
 		loadView(ViewToLoad.MAIN_VIEW);
@@ -158,6 +160,7 @@ public class MainActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 		currentView.resume();
+
 	}
 	
 	@Override
@@ -175,7 +178,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		dbh.close();
+		HugglerDatabase.closeAll();
 	}
 
 	@Override

@@ -69,16 +69,17 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     private static final String TABLE_FRIENDS = "friends";
     private static SqlFriendsTable friends_table;
     
-    private SQLiteDatabase db;
     
     private HugglerDatabase(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        db = getWritableDatabase();
     }
     
     public static void init(Context context) {
     	if(instance == null) {
+    		Log.d(TAG, "DBHelper intialized");
     		instance = new HugglerDatabase(context);
+    		// Initializes all the tables
+    		instance.getWritableDatabase();
     	} else {
     		Log.w(TAG, "Database initialized multiple times!");
     	}
@@ -184,5 +185,12 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
     	// add subsequent modificiations
     	// if oldVersion < 1 && newVersion >=1 create table debug_properties ...  
+    }
+    
+  
+    public static void closeAll() {
+    	Log.d(TAG, "Closing DBHelper ");
+    	instance.close();
+    	instance = null;
     }
 }

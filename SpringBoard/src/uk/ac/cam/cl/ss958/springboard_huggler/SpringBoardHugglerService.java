@@ -3,6 +3,8 @@ package uk.ac.cam.cl.ss958.springboard_huggler;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.ac.cam.cl.ss958.huggler.Huggler;
+import uk.ac.cam.cl.ss958.huggler.HugglerExtension;
+import uk.ac.cam.cl.ss958.huggler.accesspoint_extension.AccessPointExtension;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
 import android.app.Service;
 import android.content.Context;
@@ -28,7 +30,9 @@ public class SpringBoardHugglerService extends Service {
 		Log.d("Huggler", "Service started?");
 		running = new AtomicBoolean(false);
 		huggler = new Huggler((Context)this);
-		
+		HugglerExtension wifiExtension = new AccessPointExtension((Context)this);
+		wifiExtension.setProtocol(new HugglerSpringBoardProtocol());
+		huggler.addExtension(wifiExtension);
 	}
 	
 	@Override

@@ -114,6 +114,7 @@ public class SqlChatMessagesTable {
 				result.add(ecm);
 				cursor.moveToNext();
 			}
+			cursor.close();
 			return result;
 		} catch(Exception e) {
 			return null;

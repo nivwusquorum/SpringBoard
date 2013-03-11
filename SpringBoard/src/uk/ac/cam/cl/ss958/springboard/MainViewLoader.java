@@ -35,6 +35,7 @@ public class MainViewLoader extends ViewLoader {
 	
 	@Override
 	protected void onCreate() {
+
 		activity.setContentView(R.layout.activity_main); 
 
 		dbh = HugglerDatabase.get();
@@ -105,7 +106,6 @@ public class MainViewLoader extends ViewLoader {
 				chatHandler.postDelayed(this, 1000);
 			}
 		};
-
 	}
 
 	@Override

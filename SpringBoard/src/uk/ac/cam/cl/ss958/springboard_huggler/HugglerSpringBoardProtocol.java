@@ -1,4 +1,4 @@
-package uk.ac.cam.cl.ss958.huggler;
+package uk.ac.cam.cl.ss958.springboard_huggler;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -8,11 +8,13 @@ import java.net.Socket;
 import java.security.PublicKey;
 import java.util.List;
 
+import uk.ac.cam.cl.ss958.huggler.EncodedChatMessage;
+import uk.ac.cam.cl.ss958.huggler.HugglerProtocol;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
 
 import android.util.Log;
 
-public class HugglerSpringBoardProtocol implements HugglerProtocol {
+public class HugglerSpringBoardProtocol extends  HugglerProtocol {
 	static String TAG = "Huggler";
 	
 	HugglerDatabase dbh;
@@ -22,7 +24,7 @@ public class HugglerSpringBoardProtocol implements HugglerProtocol {
 	}
 	
 	@Override
-	public void answerClient(Socket s, String clientName) {
+	public void answerNamedClient(Socket s, String clientName) {
 		try {
 			Log.d("Huggler", "answeringClient");
 			sendMessages(s);
@@ -40,7 +42,7 @@ public class HugglerSpringBoardProtocol implements HugglerProtocol {
 	}
 
 	@Override
-	public void askClient(Socket s, String clientName) {
+	public void askNamedClient(Socket s, String clientName) {
 		try {
 			Log.d("Huggler", "askingClient");
 			getMessages(s);
@@ -67,12 +69,12 @@ public class HugglerSpringBoardProtocol implements HugglerProtocol {
 					EncodedChatMessage ecm = (EncodedChatMessage)o;
 					PublicKey pk = dbh.getFriendsTable().getKeyForFriend(ecm.getUser());
 					if (pk == null) {
-						Log.d("Huggler", "Received message, that I cannot decrypt");
+						Log.d(TAG, "Received message, that I cannot decrypt");
 						continue;
 					}
 					dbh.getMessageTable().addEncodedMessage(ecm, pk);
 				} else {
-					Log.e("Huggler", "Not EncodedMessage!");
+					Log.e(TAG, "Not EncodedMessage!");
 				}
 			}
 		} else {
