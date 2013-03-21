@@ -31,7 +31,7 @@ public class SpringBoardHugglerService extends Service {
 		running = new AtomicBoolean(false);
 		huggler = new Huggler((Context)this);
 		HugglerExtension wifiExtension = new AccessPointExtension((Context)this);
-		wifiExtension.setProtocol(new HugglerSpringBoardProtocol());
+		wifiExtension.setProtocol(new HugglerSpringBoardProtocol(getContentResolver()));
 		huggler.addExtension(wifiExtension);
 	}
 	

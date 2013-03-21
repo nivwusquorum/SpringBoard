@@ -1,4 +1,4 @@
-package uk.ac.cam.cl.ss958.huggler;
+package uk.ac.cam.cl.ss958.springboard.content;
 
 import java.io.IOException;
 import java.io.Serializable;

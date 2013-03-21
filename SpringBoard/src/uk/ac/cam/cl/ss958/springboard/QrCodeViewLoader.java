@@ -38,7 +38,7 @@ public class QrCodeViewLoader extends ViewLoader {
 		});
 		
 		try {
-			HugglerDatabase hdb = HugglerDatabase.get();
+			/*HugglerDatabase hdb = HugglerDatabase.get();
 			String username = hdb.readProperty(Property.HUGGLER_ID);
 			KeyPair kp = hdb.getMyKeyPair();
 			
@@ -47,7 +47,7 @@ public class QrCodeViewLoader extends ViewLoader {
 			int width = display.getWidth();
 			int height = display.getHeight()*8/10; // * 80%
 
-			qrcodeImage.setImageBitmap(QRGenerator.generate(username, kp, width, height));
+			qrcodeImage.setImageBitmap(QRGenerator.generate(username, kp, width, height));*/
 		} catch(Exception e) {
 			Log.e(TAG, "Unable to generate barcode");
 		}		

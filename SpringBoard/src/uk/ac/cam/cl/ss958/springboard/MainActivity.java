@@ -6,14 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.actionbarsherlock.app.SherlockActivity;
 import com.google.zxing.integration.android.*;
 
-import uk.ac.cam.cl.ss958.huggler.ChatMessage;
 import uk.ac.cam.cl.ss958.huggler.Huggler;
 import uk.ac.cam.cl.ss958.huggler.HugglerConfig;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.DebugProperty;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.Property;
+import uk.ac.cam.cl.ss958.springboard.content.ChatMessage;
 import uk.ac.cam.cl.ss958.springboard_huggler.SpringBoardHugglerService;
 import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 import android.os.Bundle;
@@ -30,7 +31,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 
-public class MainActivity extends Activity {
+public class MainActivity extends SherlockActivity {
 	static final String TAG = "SpringBoard";
 	
 	HugglerDatabase dbh;
@@ -136,11 +137,11 @@ public class MainActivity extends Activity {
 				String todo = scanResult.getContents();
 
 				FriendMessage fm = (FriendMessage)SerializableToolkit.fromString(todo);
-				if(dbh.getFriendsTable().addFriend(fm)) {
+				/*if(dbh.getFriendsTable().addFriend(fm)) {
 					showMessage(fm.getName() + " added as a friend.");
 				} else {
 					showMessage(fm.getName() + " is already a friend.");
-				}
+				}*/
 			} catch (Exception e) {
 				
 				e.printStackTrace();
@@ -180,12 +181,4 @@ public class MainActivity extends Activity {
 		super.onDestroy();
 		HugglerDatabase.closeAll();
 	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.activity_main, menu);
-		return true;
-	}
-
 }

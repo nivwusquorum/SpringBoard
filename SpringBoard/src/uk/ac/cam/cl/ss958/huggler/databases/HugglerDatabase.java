@@ -5,6 +5,7 @@ import java.security.PublicKey;
 import java.util.Random;
 
 import uk.ac.cam.cl.ss958.springboard.FriendMessage;
+import uk.ac.cam.cl.ss958.springboard.content.SqlChatMessagesTable;
 import uk.ac.cam.cl.ss958.toolkits.AsymmetricCryptoToolbox;
 import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 
@@ -23,10 +24,10 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     private static final int DATABASE_VERSION = 1;
  
     // Database Name
-    private static final String DATABASE_NAME = "Huggler";
+    public static final String DATABASE_NAME = "Huggler";
  
     // Debug Properties table
-    private static final String DEBUG_TABLE_NAME = "debug_properties";
+    public static final String DEBUG_TABLE_NAME = "debug_properties";
     private static SqlKeyValueTable debug_table;
     
     public enum DebugProperty {
@@ -45,12 +46,11 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     }
     
     // Debug Properties table
-    private static final String PROPERTIES_TABLE_NAME = "properties";
+    public static final String PROPERTIES_TABLE_NAME = "properties";
     private static SqlKeyValueTable properties_table;
     
     public enum Property {
-    	HUGGLER_ID ("huggler_id"),
-    	KEYPAIR ("keypair");
+    	HUGGLER_ID ("huggler_id");
     	
     	private String name;
     	
@@ -63,11 +63,6 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     	}
     }
     
-    private static final String TABLE_MESSAGES = "chatmessages";
-    private static SqlChatMessagesTable messages_table;
-    
-    private static final String TABLE_FRIENDS = "friends";
-    private static SqlFriendsTable friends_table;
     
     
     private HugglerDatabase(Context context) {
@@ -103,14 +98,9 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     		tables_initialized = true;
 	        debug_table = new SqlKeyValueTable(db, DEBUG_TABLE_NAME);
 	        properties_table = new SqlKeyValueTable(db, PROPERTIES_TABLE_NAME);
-	        messages_table = new SqlChatMessagesTable(db, TABLE_MESSAGES);
-	        friends_table = new SqlFriendsTable(db, TABLE_FRIENDS);
     	}
     }
     
-    public SqlChatMessagesTable getMessageTable() {
-    	return messages_table;
-    }
     
     @Override
     public void onOpen(SQLiteDatabase db) {
@@ -136,30 +126,6 @@ public class HugglerDatabase extends SQLiteOpenHelper {
         Random generator = new Random();
         String randomId = "huggler_user" + generator.nextInt(1000);
         properties_table.insert(Property.HUGGLER_ID.getName(), randomId);
-        KeyPair kp = null;
-        try {
-        	kp = AsymmetricCryptoToolbox.generateKeypair();
-        	String encodedKp = SerializableToolkit.toString(kp); 
-            properties_table.insert(Property.KEYPAIR.getName(), encodedKp);        	
-        } catch(Exception e) {
-        	Log.wtf("Huggler", "Unable to generate keypair(" + e.getMessage() + ")");
-        }
-        
-        messages_table.create();
-
-        friends_table.create();
-    }
-    
-    
-    
-    public KeyPair getMyKeyPair() {
-    	try {
-    		String encodedKp = readProperty(Property.KEYPAIR);
-    		return (KeyPair)SerializableToolkit.fromString(encodedKp);
-    	} catch(Exception e) {
-    		Log.e("Huggler", "Cannot obtain keypair: (" + e.getMessage() + ")");
-    		return null;
-    	}
     }
     
     public String readProperty(Property p) {
@@ -176,10 +142,6 @@ public class HugglerDatabase extends SQLiteOpenHelper {
     	debug_table.update(d.getName(), String.valueOf(new_value));
     }
     
-    public SqlFriendsTable getFriendsTable() {
-    	return friends_table;
-    }
- 
     // Upgrading database
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {

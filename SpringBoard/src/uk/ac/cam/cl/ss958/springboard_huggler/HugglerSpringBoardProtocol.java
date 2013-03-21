@@ -6,21 +6,29 @@ import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.cam.cl.ss958.huggler.EncodedChatMessage;
 import uk.ac.cam.cl.ss958.huggler.HugglerProtocol;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
+import uk.ac.cam.cl.ss958.springboard.content.ChatMessage;
+import uk.ac.cam.cl.ss958.springboard.content.DatabaseContentProvider;
+import uk.ac.cam.cl.ss958.springboard.content.EncodedChatMessage;
+import uk.ac.cam.cl.ss958.springboard.content.SpringboardSqlSchema;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.net.Uri;
 import android.util.Log;
 
 public class HugglerSpringBoardProtocol extends  HugglerProtocol {
 	static String TAG = "Huggler";
 	
-	HugglerDatabase dbh;
+	ContentResolver cr;
 	
-	public HugglerSpringBoardProtocol() {
-		dbh = HugglerDatabase.get();
+	public HugglerSpringBoardProtocol(ContentResolver cr) {
+		this.cr = cr;
 	}
 	
 	@Override
@@ -54,14 +62,45 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocol {
 		}
 	}
 	
+    private static Uri messageTableUri = 
+    		Uri.parse("content://" + DatabaseContentProvider.AUTHORITY +
+    				"/" + SpringboardSqlSchema.Strings.Messages.NAME);
+    
+    // These are the rows that we will retrieve.
+    static final String[] PROJECTION = new String[] {
+        SpringboardSqlSchema.Strings.Messages.KEY_ID,
+        SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE,
+    };
+	
 	private void sendMessages(Socket s) throws Exception {
-		Object payload = dbh.getMessageTable().getEncoded();
+		Cursor c = cr.query(messageTableUri, PROJECTION, null, null, null);
+		c.moveToFirst();
+		List<ChatMessage> messages = new ArrayList<ChatMessage>();
+		while(!c.isAfterLast()) {
+			messages.add(new ChatMessage("X", c.getString(1)));
+			c.moveToNext();
+		}
 		ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
-		writer.writeObject(payload);
+		writer.writeObject(messages);
+		/*Object payload = dbh.getMessageTable().getEncoded();
+		ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
+		writer.writeObject(payload);*/
 	}
 	
 	private void getMessages(Socket s) throws Exception {
 		ObjectInputStream reader = new ObjectInputStream(s.getInputStream());
+		Object message = reader.readObject();
+		if (message instanceof List) {
+			for (Object o : (List)message) {
+				if (o instanceof ChatMessage) {
+					String m = ((ChatMessage)o).getMessage();
+	   				 ContentValues values = new ContentValues();
+	                 values.put(SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE, m);
+	                 cr.insert(messageTableUri, values);
+				}
+			}
+		}
+		/*ObjectInputStream reader = new ObjectInputStream(s.getInputStream());
 		Object message = reader.readObject();
 		if(message instanceof List) {
 			for(Object o: (List)message) {
@@ -79,7 +118,7 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocol {
 			}
 		} else {
 			throw new Exception("Not that object");
-		}
+		}*/
 	}
 
 }

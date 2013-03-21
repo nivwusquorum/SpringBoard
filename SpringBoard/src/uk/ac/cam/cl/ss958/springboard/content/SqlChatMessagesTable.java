@@ -1,12 +1,10 @@
-package uk.ac.cam.cl.ss958.huggler.databases;
+package uk.ac.cam.cl.ss958.springboard.content;
 
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import uk.ac.cam.cl.ss958.huggler.ChatMessage;
-import uk.ac.cam.cl.ss958.huggler.EncodedChatMessage;
 import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 
 import android.content.ContentValues;
@@ -19,16 +17,16 @@ public class SqlChatMessagesTable {
 	private SQLiteDatabase db;
 	private String name;
 
-	private static final String KEY_ID = "id";
-	private static final String KEY_WHEN = "date";
-	private static final String KEY_USER = "user";
-	private static final String KEY_MESSAGE = "message";
-	private static final String KEY_ENCODED_MESSAGE = "encoded_message";
+	public static final String KEY_ID = "id";
+	public static final String KEY_WHEN = "date";
+	public static final String KEY_USER = "user";
+	public static final String KEY_MESSAGE = "message";
+	public static final String KEY_ENCODED_MESSAGE = "encoded_message";
 
 	private static final String[] allColumns = 
 		{ KEY_ID, KEY_WHEN, KEY_USER, KEY_MESSAGE };
 
-	SqlChatMessagesTable(SQLiteDatabase db, String name) {
+	public SqlChatMessagesTable(SQLiteDatabase db, String name) {
 		this.name = name;
 		this.db = db;
 	}
@@ -78,6 +76,15 @@ public class SqlChatMessagesTable {
 		}
 	}
 	
+	public Cursor getCursor(Integer limit) {
+		String maybeLimit = (limit == null) ? null : String.valueOf(limit); 
+		Cursor cursor = db.query(name + "_normal",
+								 allColumns, null, null, null, 
+								 null, KEY_WHEN + " DESC", maybeLimit );	
+
+		return cursor;
+
+	}
 
 	public List<ChatMessage> get(Integer limit) {
 		List<ChatMessage> result = new ArrayList<ChatMessage>();
@@ -86,7 +93,7 @@ public class SqlChatMessagesTable {
 		Cursor cursor = db.query(name + "_normal",
 								 allColumns, null, null, null, 
 								 null, KEY_WHEN + " DESC", maybeLimit );
-
+	
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast()) {
 			ChatMessage m = new ChatMessage(

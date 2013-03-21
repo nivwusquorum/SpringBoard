@@ -4,11 +4,11 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.List;
 
-import uk.ac.cam.cl.ss958.huggler.ChatMessage;
-import uk.ac.cam.cl.ss958.huggler.EncodedChatMessage;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.Property;
 import uk.ac.cam.cl.ss958.springboard.MainActivity.ViewToLoad;
+import uk.ac.cam.cl.ss958.springboard.content.ChatMessage;
+import uk.ac.cam.cl.ss958.springboard.content.EncodedChatMessage;
 import android.app.Activity;
 import android.os.Handler;
 import android.util.Log;
@@ -52,7 +52,7 @@ public class MainViewLoader extends ViewLoader {
 		sendButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				String user = dbh.readProperty(Property.HUGGLER_ID);
+				/*String user = dbh.readProperty(Property.HUGGLER_ID);
 				String message = messageText.getText().toString();
 				KeyPair kp = dbh.getMyKeyPair();
 				try {
@@ -65,7 +65,7 @@ public class MainViewLoader extends ViewLoader {
 					messageText.setText("");
 				} catch (Exception e) {
 					activity.showMessage("Unable to send message (" + e.getMessage() + ")");
-				}
+				}*/
 			}
 		});
 		
@@ -89,8 +89,8 @@ public class MainViewLoader extends ViewLoader {
 		chatHandler = new Handler();
 		refreshChat = new Runnable() {
 			@Override
-			public void run() {
-				if (dbh == null) {
+			public void run() { 
+				/*if (dbh == null) {
 					Log.wtf("Huggler", "DBH is not initialized.");
 				}
 				String name = dbh.readProperty(Property.HUGGLER_ID);
@@ -103,7 +103,7 @@ public class MainViewLoader extends ViewLoader {
 							"==> " + m.toString() + "\n";
 				}
 				messagesView.setText(toDisplay);
-				chatHandler.postDelayed(this, 1000);
+				chatHandler.postDelayed(this, 1000);*/
 			}
 		};
 	}
