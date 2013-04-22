@@ -4,7 +4,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.ac.cam.cl.ss958.huggler.Huggler;
 import uk.ac.cam.cl.ss958.huggler.HugglerExtension;
+import uk.ac.cam.cl.ss958.huggler.HugglerProtocol;
 import uk.ac.cam.cl.ss958.huggler.accesspoint_extension.AccessPointExtension;
+import uk.ac.cam.cl.ss958.huggler.bluetooth_extension.BluetoothExtension;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
 import android.app.Service;
 import android.content.Context;
@@ -31,8 +33,12 @@ public class SpringBoardHugglerService extends Service {
 		running = new AtomicBoolean(false);
 		huggler = new Huggler((Context)this);
 		HugglerExtension wifiExtension = new AccessPointExtension((Context)this);
-		wifiExtension.setProtocol(new HugglerSpringBoardProtocol(getContentResolver()));
+		HugglerProtocol springboardProtocol = new HugglerSpringBoardProtocol(getContentResolver());
+		wifiExtension.setProtocol(springboardProtocol);
 		huggler.addExtension(wifiExtension);
+		/*HugglerExtension bluetoothExtension = new BluetoothExtension((Context)this);
+		bluetoothExtension.setProtocol(springboardProtocol);
+		huggler.addExtension(bluetoothExtension);*/
 	}
 	
 	@Override
@@ -49,6 +55,7 @@ public class SpringBoardHugglerService extends Service {
 	
 	@Override
 	public void onDestroy() {
+		huggler.stop();
 		huggler.destroy();
 		if(running.compareAndSet(true, false)) {			
 			Toast.makeText(this, "Huggler service stopped.", Toast.LENGTH_SHORT).show(); 

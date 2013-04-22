@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.cam.cl.ss958.huggler.HugglerProtocol;
+import uk.ac.cam.cl.ss958.huggler.HugglerProtocolNamed;
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase;
 import uk.ac.cam.cl.ss958.springboard.content.ChatMessage;
 import uk.ac.cam.cl.ss958.springboard.content.DatabaseContentProvider;
@@ -22,7 +23,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 
-public class HugglerSpringBoardProtocol extends  HugglerProtocol {
+public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 	static String TAG = "Huggler";
 	
 	ContentResolver cr;

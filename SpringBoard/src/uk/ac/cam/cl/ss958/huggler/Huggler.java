@@ -58,11 +58,14 @@ public class Huggler {
 			e.start();
 		}
 	}
-
-	public void destroy() {
+	
+	public void stop() {
 		for(HugglerExtension e : extensions) {
 			e.stop();
 		}
+	}
+	
+	public void destroy() {
 		for(HugglerExtension e : extensions) {
 			e.destroy();
 		}
