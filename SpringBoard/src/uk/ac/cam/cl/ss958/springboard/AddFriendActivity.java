@@ -1,8 +1,17 @@
 package uk.ac.cam.cl.ss958.springboard;
 
+import uk.ac.cam.cl.ss958.springboard.FragmentFriends.DetailsFragment;
+
+import com.actionbarsherlock.app.SherlockActivity;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.app.SherlockListFragment;
+
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -13,20 +22,24 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
+import java.util.Comparator;
 import android.widget.Toast;
 
-public class AddFriendActivity extends Activity {
+public class AddFriendActivity extends SherlockFragmentActivity {
 
 	private BluetoothAdapter mBluetoothAdapter;
-	private static final int REQUEST_ENABLE_BT = 2;
+	private static final int REQUEST_ENABLE_BT_FOR_SCAN = 2;
 
 	private Button mBtnDiscoverable;
 	private Button mBtnScan;
 	private ImageView mImgDiscoverable;
 	private TextView mTxtDiscoverable;
+	private DiscoveredFriendsFragment mFragmentBluetoothList;
 
 
 	@Override
@@ -63,12 +76,41 @@ public class AddFriendActivity extends Activity {
 				onDiscoverabilityChanged(isDiscoverable());
 			}
 		});
+		
+		mBtnScan.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				
+				if (!mBluetoothAdapter.isEnabled()) {
+					Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+					startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT_FOR_SCAN);
+				} else {
+					attemptToStartScan();
+				}
+					
+			}
+		});
+		
 		IntentFilter filter = 
 				new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+		filter.addAction(BluetoothDevice.ACTION_FOUND);
 		registerReceiver(bluetoothReceiver, filter);
+		
 		onDiscoverabilityChanged(isDiscoverable());
-
-
+		
+		mFragmentBluetoothList = new DiscoveredFriendsFragment();
+		getSupportFragmentManager().beginTransaction().
+		add(R.id.bluetoothlist, mFragmentBluetoothList).commit();
+	}
+	
+	void attemptToStartScan() {
+		mBluetoothAdapter.cancelDiscovery();
+		if (!mBluetoothAdapter.startDiscovery()) {
+			showMessage("Problem performing scan for your friends. This should not happen!", null);
+		} else {
+			mFragmentBluetoothList.clearAll();
+			Toast.makeText(this, "Starting look up (may take a while).", Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	private boolean isDiscoverable() {
@@ -87,11 +129,11 @@ public class AddFriendActivity extends Activity {
 		} else {
 			mImgDiscoverable.setImageResource(R.drawable.discovery_on);
 			mTxtDiscoverable.setText(
-					"You are discoverable for your friends now. Ask your " +
-							"friend to click \"Look up visible friends\" for him " +
-							"to be able to add you. Visibility runs out after " +
-					"2 minutes to save your battery");
-			mTxtDiscoverable.setTextColor(0xff80ff00);
+					"You are discoverable for your friends now. You will be " +
+							"Listed as " + mBluetoothAdapter.getName() + ". Ask your " +
+							"friend to click \"Look up visible friends\". Visibility " +
+					" runs out after 2 minutes to save your battery.");
+			mTxtDiscoverable.setTextColor(0xff32CD32);
 		}
 	}
 
@@ -100,7 +142,7 @@ public class AddFriendActivity extends Activity {
 		//@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
-			
+
 			// nope cannot do switch on strings - already tried!
 			if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED.equals(action)) {
 				int scanMode = intent.getIntExtra(
@@ -110,6 +152,10 @@ public class AddFriendActivity extends Activity {
 						scanMode == 
 						BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE;
 				onDiscoverabilityChanged(isDiscoverable);
+			} else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+			     BluetoothDevice device = 
+			    		 intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+			     mFragmentBluetoothList.addItem(device.getName());
 			}
 		}
 	};
@@ -122,13 +168,6 @@ public class AddFriendActivity extends Activity {
 	protected void onStart() {
 		super.onStart();
 
-	}
-
-	void requestBluetooth() {
-		if (!mBluetoothAdapter.isEnabled()) {
-			Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-			startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-		}
 	}
 
 	// it requests bluetooth automatically
@@ -167,6 +206,7 @@ public class AddFriendActivity extends Activity {
 		if(messageHandler == null) { 
 			messageHandler = new Handler();
 		}
+
 		final Activity self = this;
 
 		Runnable r = new Runnable() {
@@ -178,7 +218,9 @@ public class AddFriendActivity extends Activity {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
 								dialog.dismiss();
-								callback.run();
+								if (callback != null) {
+									callback.run();
+								}
 							}
 						}).create();
 				dialog.show();				
@@ -188,15 +230,79 @@ public class AddFriendActivity extends Activity {
 		r.run();
 	}
 
+	
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-		if (requestCode == REQUEST_ENABLE_BT) {
+		if (requestCode == REQUEST_ENABLE_BT_FOR_SCAN) {
 			if(resultCode == RESULT_OK){      
-
+				
 			}
 			if (resultCode == RESULT_CANCELED) {    
-				friendNotAdded();
+				showMessage("You must enable bluetooth to scan for visible friends!", null);
 			}
 		}
+	}
+	
+
+	
+	
+	
+	
+	public static class DiscoveredFriendsFragment extends SherlockListFragment {
+		static
+		private ArrayAdapter<String> adapter;
+
+		@Override
+		public void onActivityCreated(Bundle savedInstanceState) {
+			super.onActivityCreated(savedInstanceState);
+
+			adapter = new ArrayAdapter<String>(getActivity(),
+					R.layout.simple_list_item_checkable_1,
+					android.R.id.text1);
+			// Populate list with our static array of titles.
+			setListAdapter(adapter);
+		}
+
+		// returns unique name under which item was added.
+		public String addItem(String item) {
+			int count = 0;
+			String suggested_name = "" + item;
+
+
+			while(adapter.getPosition(suggested_name) != -1) {
+				++count;
+				suggested_name = item + " (" + count +")";
+			}
+
+			adapter.add(suggested_name);
+			adapter.sort(new StringComparator());
+			return suggested_name;
+		}
+		
+		public void clearAll() {
+			adapter.clear();
+		}
+
+		public void onResume() {
+			super.onResume();
+		}
+
+		@Override
+		public void onListItemClick(ListView l, View v, int position, long id) {
+
+		}
+
+		public class StringComparator implements Comparator<String>{
+			public int compare(String s1, String s2) {
+				return s1.compareTo(s2);
+			}
+		}
+		
+		@Override
+		public void onDestroy() {
+			super.onDestroy();
+		}
+
+
 	}
 }

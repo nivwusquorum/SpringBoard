@@ -61,6 +61,15 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" >
 
+            <LinearLayout
+                android:id="@+id/bluetoothlist"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/btnbluetoothscan"
+                android:orientation="vertical" >
+
+            </LinearLayout>
+
             <Button
                 android:id="@+id/btnbluetoothscan"
                 android:layout_width="wrap_content"
@@ -69,15 +78,6 @@
                 android:layout_alignParentLeft="true"
                 android:layout_alignParentRight="true"
                 android:text="Look up visible friends" />
-
-            <LinearLayout
-                android:id="@+id/bluetoothlist"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_above="@+id/button2"
-                android:layout_centerHorizontal="true"
-                android:orientation="vertical" >
-            </LinearLayout>
         </RelativeLayout>
     </LinearLayout>
 </LinearLayout>

@@ -37,7 +37,7 @@
         
         <activity
             android:name="uk.ac.cam.cl.ss958.springboard.AddFriendActivity"
-            android:label="addfriendactivity" >
+            android:label="Add a friend" >
             
         </activity>
 

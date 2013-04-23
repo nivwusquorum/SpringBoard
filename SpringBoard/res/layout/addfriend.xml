@@ -4,59 +4,80 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-    <ImageView
-        android:id="@+id/imageView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/bluetooth_friend" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-
-        <ImageView
-            android:id="@+id/imgbluetoothdiscoverable"
-            android:layout_width="88dp"
-            android:layout_height="88dp"
-            android:src="@drawable/discovery_off" />
-
-        <TextView
-            android:id="@+id/txtbluetoothdiscoverable"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="TextView" />
-
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/btnbluetoothdiscoverable"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Make Me Visible" />
-
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent"
+        android:layout_weight="1" >
 
         <Button
-            android:id="@+id/btnbluetoothscan"
-            android:layout_width="wrap_content"
+            android:id="@+id/btnbluetoothdiscoverable"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentRight="true"
-            android:text="Look up visible friends" />
+            android:text="Make Me Visible" />
 
         <LinearLayout
-            android:id="@+id/bluetoothlist"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_above="@+id/button2"
-            android:layout_centerHorizontal="true"
-            android:orientation="vertical" >
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/btnbluetoothdiscoverable"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/imageView1" >
+
+            <ImageView
+                android:id="@+id/imgbluetoothdiscoverable"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="top"
+                android:layout_weight="1"
+                android:src="@drawable/discovery_off" />
+
+            <TextView
+                android:id="@+id/txtbluetoothdiscoverable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="0.5"
+                android:text="TextView" />
 
         </LinearLayout>
 
+        <ImageView
+            android:id="@+id/imageView1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:src="@drawable/bluetooth_friend" />
     </RelativeLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical" >
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <LinearLayout
+                android:id="@+id/bluetoothlist"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/btnbluetoothscan"
+                android:orientation="vertical" >
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnbluetoothscan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentRight="true"
+                android:text="Look up visible friends" />
+        </RelativeLayout>
+    </LinearLayout>
 </LinearLayout>
