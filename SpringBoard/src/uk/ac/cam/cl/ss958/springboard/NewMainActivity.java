@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -15,10 +16,13 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.TabHost;
 import android.widget.TabHost.TabSpec;
 import android.widget.TabWidget;
 import android.widget.Toast;
+import android.widget.ViewSwitcher;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 
@@ -32,16 +36,13 @@ public class NewMainActivity extends SherlockFragmentActivity {
 	ViewPager  mViewPager;
 	TabsAdapter mTabsAdapter;
 	private TabSpec mFriendsSpec;
+	private Handler mHandler;
 
 	private static final String TAG = "SpringBoard";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		// Make sure service is running
-		Intent service_intent = new Intent(this, SpringBoardHugglerService.class);
-		startService(service_intent);	
 
 		setContentView(R.layout.toplevel_tabs);
 		mTabHost = (TabHost)findViewById(android.R.id.tabhost);
@@ -68,7 +69,11 @@ public class NewMainActivity extends SherlockFragmentActivity {
 		if (savedInstanceState != null) {
 			mTabHost.setCurrentTabByTag(savedInstanceState.getString("tab"));
 		}
+		
+		
+		
 	}
+	
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
