@@ -17,7 +17,7 @@ public class Simulator extends Timer {
 	}
 
 	private Simulator() {
-		super(Constants.SIMULATION_STEP_LENGH_MS, new ActionListener() {
+		super(0, new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				step();
@@ -27,6 +27,7 @@ public class Simulator extends Timer {
 	
 	public void setModel(SimulationModel mainModel) {
 		model = mainModel;
+		setDelay(model.getStepLengthMs());
 	}
 	
 	public static void step() {

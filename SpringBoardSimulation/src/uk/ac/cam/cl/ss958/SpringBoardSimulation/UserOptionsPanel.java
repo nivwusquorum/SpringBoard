@@ -25,6 +25,8 @@ public class UserOptionsPanel extends JPanel {
 	public void maybeUpdate() {
 		if (model.getSelectedUser() == displayedUser) return;
 
+		if (displayedUser >=0)
+			model.getUsers().get(displayedUser).setOptionsPanel(null);
 		displayedUser = model.getSelectedUser();
 		removeAll();
 		GridBagConstraints c = new GridBagConstraints();
@@ -37,6 +39,7 @@ public class UserOptionsPanel extends JPanel {
 			add(new JLabel("No user selected."), c);
 		} else {
 			final User user = model.getUsers().get(displayedUser);
+			user.setOptionsPanel(this);
 			c.gridx = 0; c.gridy = 0; c.weighty = 0.0;
 			add(new JLabel("User ID: " + model.getSelectedUser()), c);
 			

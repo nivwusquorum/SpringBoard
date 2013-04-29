@@ -17,13 +17,9 @@ public class SimulationPanel extends JPanel {
     
     private final SimulationModel model;
     
-	SimulationPanel(SimulationModel mainModel) {
+	SimulationPanel(SimulationModel mainModel) throws Exception {
 		this.model = mainModel;
-		
-		if(!model.AddRandomUser()) {
-			System.out.println("Cannot create first user?!");
-			System.exit(0);
-		}
+
 		computeSize();
 		
 		addMouseListener(new MouseAdapter(){ 
@@ -63,11 +59,16 @@ public class SimulationPanel extends JPanel {
 			g.setColor(Colors.BACKGROUD_SOFT_ERROR_COLOR);
 		else
 			g.setColor(Colors.BACKGROUND_COLOR);
+		
 		g.fillRect(0, 0, width, height);
 
+		model.prepaint(g);
+		
 		for(Integer id : model.getUsers().keySet()) {
 			model.getUsers().get(id).draw(g, id == model.getSelectedUser());
 		}
+		
+		model.postpaint(g);
 	}
 	
 	private void computeSize() {

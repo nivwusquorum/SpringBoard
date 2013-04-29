@@ -24,26 +24,32 @@ public class MainGui extends JFrame {
 	private JPanel optionsPanel;
 	private SimulationModel model;
 	
-	MainGui() {
+	MainGui() throws Exception {
 		super("SpringBoard Network Simulation");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 
 		setLayout(new BorderLayout());
 
-		model = new SimulationModel(740,680) {
+		/*
+		model = new RandomModel(740,670) {
 			@Override
 			protected void onChange() {
 				modelChanged();
 			}
 		};
-
+		*/
+		model = new RealisticModel(740, 670, 74, 67) {
+			@Override
+			protected void onChange() {
+				modelChanged();
+			}
+		};
 		simulationPanel = new SimulationPanel(model);
 		add(createScrollPanel(simulationPanel, Strings.PANEL_SIMULATION),BorderLayout.CENTER);
 
-		addUsersToModel(10);
 		optionsPanel = createOptionsPanel();
 		add(optionsPanel,BorderLayout.EAST);
-		setSize(1024,768);
+		setSize(1324,768);
 		
 		Simulator.getInstance().setModel(model);
 	}
@@ -87,7 +93,7 @@ public class MainGui extends JFrame {
 	}
 
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		MainGui hello = new MainGui();
 		hello.setVisible(true);
 	}

@@ -6,21 +6,37 @@ import java.util.ArrayList;
 
 import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
 
-public class User {
+public class User implements Comparable<User> {
 	public static final int SELECTION_BOLDNESS = 2;
-	
-	private final AdvancedRandom generator = 
-			new AdvancedRandom (System.currentTimeMillis());
-	static int numberOfIds = 0;
-	
-	private int range;
-	private int id;
-	private SimulationModel model;
-	private Point location;
+	public static final int USER_RADIUS = 3;
+	public static final int MIN_RANGE = 10;	
+	public static final int MAX_RANGE = 15;
 
 	
+	protected final AdvancedRandom generator = 
+			new AdvancedRandom (System.currentTimeMillis());
 	
-	public static final int USER_RADIUS = 7;
+	static int numberOfIds = 0;
+	
+	public static int getNumerOfUsers() {
+		return numberOfIds;
+	}
+	
+	public static void resetCounter() {
+		numberOfIds = 0;
+	}
+	
+	protected int range;
+	protected int id;
+	protected SimulationModel model;
+	private Point location;
+
+	protected UserOptionsPanel optionsPanel;
+	
+	public void setOptionsPanel(UserOptionsPanel panel) {
+		optionsPanel = panel;
+	}
+	
 	
 	public Point getLocation() {
 		return location;
@@ -30,56 +46,22 @@ public class User {
 		return id;
 	}
 	
-	// For purpose of random movement simulation.
-	// isMoving is true if currently performed action is moving.
-	// isMoving is false if currently performed action is waiting.
-	// ticksRemaining indicates number of ticks before switching to other type
-	// of action.
-	private boolean isMoving = false;
-	private int ticksRemaining = 0;
-	private NaturalMoveGenerator moveGenerator;
+	private Point sector;
 	
-	public void maybeRandomlyMove() {
-		/*if(id == 1) {
-			System.out.printf("%s\n", isMoving ? "T" : "N");
-		}*/
-		if(ticksRemaining < 0) {
-			isMoving = !isMoving;
-			ticksRemaining = isMoving ? 
-			    (int)generator.nextExponential(1.0/Constants.SIMULATION_MOVING_INVLAMBDA) :
-			    (int)generator.nextExponential(1.0/Constants.SIMULATION_WAITING_INVLAMBDA);
-			if(isMoving) 
-				moveGenerator.reset();
-		}
-		--ticksRemaining;
-		if(ticksRemaining%Constants.SIMULATION_MOVING_RESET_FREQ == 0)
-			moveGenerator.reset();
-		if(isMoving) {
-			try {
-				randomStep();
-			} catch(CannotPlaceUserException e) {
-				// is Surrounded from each side then pitty, wait...
-			}
-		}
+	public Point getSector() { return sector; }
+	
+	public void setSector(Point s) {
+		sector = s;
 	}
 	
-	private static Point [] possibleSteps = { new Point(-1,0),
-											  new Point(0,-1),
-											  new Point(1,0),
-											  new Point(0,1)};
 	
-	public void randomStep() throws CannotPlaceUserException {
-		int step = moveGenerator.nextStep();
-		if (step == -1) throw new CannotPlaceUserException();
-		setLocation(location.add(possibleSteps[step]));
-	}
-
-
 	public void setLocation(Point location) throws CannotPlaceUserException {
-		if(model.validatePosition(location, id))
+		if(model.validatePosition(location, id)) {
 			this.location = location;
-		else 
+			model.updatePosition(this);
+		} else { 
 			throw new CannotPlaceUserException();
+		}
 	}
 
 	public int getRange() {
@@ -106,58 +88,38 @@ public class User {
 			}
 		}
 		g.setColor(Colors.RANGE_COLOR);
-		g.drawOval(location.getX()- range, location.getY()- range, 2*range, 2*range);
+		if (model.drawRanges()) 
+				g.drawOval(location.getX()- range, location.getY()- range, 2*range, 2*range);
 	}
 	
 	public User(SimulationModel mainModel) throws CannotPlaceUserException {
-		model = mainModel;
-		id = numberOfIds++;
-		// TODO: change to exponential distribution
-		range = 50 + generator.nextInt(100);
+		assert SELECTION_BOLDNESS < USER_RADIUS && 
+			   USER_RADIUS < MIN_RANGE &&
+			   MIN_RANGE < MAX_RANGE;
 		
-		int retries = 5;
+		model = mainModel;
+		
+		int retries = 1000;
 		boolean successfullyPlaced = false;
 		while(retries-- >= 0) {
 			Point newLocation = new Point(generator.nextInt(model.getWidth()),
 									      generator.nextInt(model.getHeight()));
 			if(model.validatePosition(newLocation, -1)) {
 				successfullyPlaced = true;
-				location = newLocation;
+				setLocation(newLocation);
 				break;
 			}
 		}
 		if(!successfullyPlaced) throw new CannotPlaceUserException();
 		
-		moveGenerator = new NaturalMoveGenerator(possibleSteps.length, generator) {
-			protected boolean validate(int move) {
-				return model.validatePosition(location.add(possibleSteps[move]), id);
-			}
-			
-			protected int suggestedMove() {
-				// How close is close.
-				final int closeFactor = 10;
-				int best = closeFactor*USER_RADIUS;
-				int bestGuess = -1;
-				if (location.getX() < best) {
-					best = location.getX();
-					bestGuess = 2;
-				} 
-				if(model.getWidth() - location.getX() < best) {
-					best = model.getWidth() - location.getX();
-					bestGuess = 0;
-					
-				}
-				if (location.getY() < best) {
-					best = location.getY();
-					bestGuess = 3;
-				}
-				if (model.getHeight() - location.getY() < best) {
-					best = model.getHeight() - location.getY();
-					bestGuess = 1;
-				}
-				return bestGuess;
-			}
-			
-		};
+		id = numberOfIds++;
+		// TODO: change to exponential distribution
+		range = MIN_RANGE + generator.nextInt(MAX_RANGE-MIN_RANGE);
+	}
+
+	@Override
+	public int compareTo(User o) {
+		if (o == null) return -1;
+		return ((Integer)this.getID()).compareTo(o.getID());
 	}
 }
