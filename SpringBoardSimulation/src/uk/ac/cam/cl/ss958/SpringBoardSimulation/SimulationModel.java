@@ -5,6 +5,7 @@ import uk.ac.cam.cl.ss958.IntegerGeometry.*;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -14,6 +15,8 @@ import java.util.TreeSet;
 import javax.swing.JPanel;
 
 public abstract class SimulationModel {		
+	
+	private static final boolean NO_OVERLAP = true;
 	enum SoftError {
 		NONE,
 		WRONG_MOVING;
@@ -110,25 +113,26 @@ public abstract class SimulationModel {
 		    x.getY() <= User.USER_RADIUS ||
 		    x.getY() >= height - User.USER_RADIUS) return false;
 		
-		Point xSector = locationToSector(x);
-		
-		for(int i=0; i <sectorOffsets.length; ++i) {
-			Point currentSector = xSector.add(sectorOffsets[i]);
-			if (currentSector.getX() < 0 || currentSector.getX() >= numSectorsW ||
-				    currentSector.getY() < 0 || currentSector.getY() >= numSectorsH) { 
-				continue;
-			}
-			for (User u : sector[currentSector.getX()][currentSector.getY()]) {
-				if (u.getID() != excludingIndex &&
-				    Compute.euclideanDistanceSquared(x, u.getLocation()) 
-				        <= Compute.square(2*User.USER_RADIUS)) {
-					return false;
+		if (NO_OVERLAP) {
+			Point xSector = locationToSector(x);
+			
+			for(int i=0; i <sectorOffsets.length; ++i) {
+				Point currentSector = xSector.add(sectorOffsets[i]);
+				if (currentSector.getX() < 0 || currentSector.getX() >= numSectorsW ||
+					    currentSector.getY() < 0 || currentSector.getY() >= numSectorsH) { 
+					continue;
+				}
+				for (User u : sector[currentSector.getX()][currentSector.getY()]) {
+					if (u.getID() != excludingIndex &&
+					    Compute.euclideanDistanceSquared(x, u.getLocation()) 
+					        <= Compute.square(2*User.USER_RADIUS)) {
+						return false;
+					}
 				}
 			}
 		}
 		
 		return true;
-		
 	}
 	
 	public int getSelectedUser() {
@@ -193,7 +197,7 @@ public abstract class SimulationModel {
 	public abstract int getStepLengthMs();
 	
 	
-	protected static class UserSet extends TreeSet<User> {
+	protected static class UserSet extends HashSet<User> {
 		
 	}
 

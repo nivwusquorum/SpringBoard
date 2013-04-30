@@ -10,7 +10,7 @@ public class User implements Comparable<User> {
 	public static final int SELECTION_BOLDNESS = 2;
 	public static final int USER_RADIUS = 3;
 	public static final int MIN_RANGE = 10;	
-	public static final int MAX_RANGE = 15;
+	public static final int MAX_RANGE = 16;
 
 	
 	protected final AdvancedRandom generator = 
