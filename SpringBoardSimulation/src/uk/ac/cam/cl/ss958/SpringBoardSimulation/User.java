@@ -104,7 +104,7 @@ public class User implements Comparable<User> {
 		while(retries-- >= 0) {
 			Point newLocation = new Point(generator.nextInt(model.getWidth()),
 									      generator.nextInt(model.getHeight()));
-			if(model.validatePosition(newLocation, -1)) {
+			if(model.validatePosition(newLocation, -1, true)) {
 				successfullyPlaced = true;
 				setLocation(newLocation);
 				break;

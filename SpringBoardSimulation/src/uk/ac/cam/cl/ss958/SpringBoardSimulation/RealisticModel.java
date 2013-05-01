@@ -5,6 +5,8 @@ import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,7 +18,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
@@ -25,7 +30,7 @@ import com.sun.org.apache.xerces.internal.impl.xpath.XPath.Step;
 import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
 
 public class RealisticModel extends SimulationModel {
-	static Random generator =  new SecureRandom ();
+	static Random generator =  new Random (System.currentTimeMillis());
 
 	private static final int SIMULATION_WAITING_INVLAMBDA = 400;
 	private static final int SIMULATION_STEP_LENGH_MS = 1;
@@ -110,8 +115,10 @@ public class RealisticModel extends SimulationModel {
 	private JLabel timeLabel;
 
 	private JLabel executionTime;
+
+	private JCheckBox drawSocialGraph;
 	@Override
-	public void addToOptionsMenu(GlobalOptionsPanel o) {
+	public void addToOptionsMenu(final GlobalOptionsPanel o) {
 		super.addToOptionsMenu(o);
 		timeLabel = new JLabel("");
 		o.addElement(timeLabel, 30);
@@ -119,6 +126,28 @@ public class RealisticModel extends SimulationModel {
 		executionTime = new JLabel("");
 		o.addElement(executionTime, 30);
 		updateTimeLabel();
+
+		drawSocialGraph = new JCheckBox();
+		drawSocialGraph.setSelected(true);
+		drawSocialGraph.setText("Social Graph");
+		drawSocialGraph.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				onChange();
+			}
+		});
+		o.addElement(drawSocialGraph, 30);
+		
+		JButton socialStats = new JButton("Social Graph Details");
+		
+		o.addElement(socialStats, 30);
+		
+		socialStats.addActionListener(new ActionListener() {		
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JOptionPane.showMessageDialog(o, computeSocialGraphStats());
+			}
+		});
 	}
 
 	public void updateTimeLabel() {
@@ -154,11 +183,11 @@ public class RealisticModel extends SimulationModel {
 					usersToRemove.add(u);
 				}
 			}
-			
+
 			for (RealisticUser u : usersToRemove) {
 				activeUsers.remove(u);
 			}
-			
+
 			onChange();
 			running.set(false);
 
@@ -210,6 +239,22 @@ public class RealisticModel extends SimulationModel {
 		}
 	}
 
+	@Override
+	public void postpaint(Graphics g) {
+		if (drawSocialGraph.isSelected()) {
+			g.setColor(new Color(200,0,0));
+			for (Integer i : users.keySet()) {
+				SocialUser u = users.get(i);
+				for (User friend : u.getFriends()) {
+					if (u.getID() < friend.getID()) {
+						g.drawLine(u.getLocation().getX(), u.getLocation().getY(),
+								friend.getLocation().getX(), friend.getLocation().getY());
+					}
+				}
+			}
+			super.postpaint(g);
+		}
+	}
 
 
 
@@ -289,12 +334,31 @@ public class RealisticModel extends SimulationModel {
 		}
 	}
 
+	public String computeSocialGraphStats() {
+		List<List<Integer>> adjacency =
+				new ArrayList<List<Integer>>(User.getNumerOfUsers());
+
+		for (int i = 0; i<User.getNumerOfUsers(); ++i) {
+			adjacency.add(new ArrayList<Integer>());
+		}
+		
+		for (Integer i : users.keySet()) {
+			SocialUser u = users.get(i);
+			List<Integer> friends = adjacency.get(u.getID());
+			for (User friend : u.getFriends()) {
+				friends.add(friend.getID());
+			}
+		}
+		GraphProperties.Graph graph =
+				new GraphProperties.Graph(User.getNumerOfUsers(), adjacency);
+		
+		return (new GraphProperties(graph)).toString();
+	}
 
 
 
 
-
-	private static class RealisticUser extends User {
+	private static class RealisticUser extends SocialUser {
 
 		private long wakeMeUpAt = 0;
 		private RealisticMoveGenerator moveGenerator;
@@ -324,7 +388,7 @@ public class RealisticModel extends SimulationModel {
 				protected Point getNewTarget() {
 					return community.getSquareForNextTarget();
 				}
-				
+
 				protected RealisticModel getModel() {
 					return model;
 				}
@@ -501,7 +565,7 @@ public class RealisticModel extends SimulationModel {
 		protected Point getCurrentLocation() { return null; }
 
 		protected Point getNewTarget() { return null; }
-		
+
 		protected abstract RealisticModel getModel();
 	}
 

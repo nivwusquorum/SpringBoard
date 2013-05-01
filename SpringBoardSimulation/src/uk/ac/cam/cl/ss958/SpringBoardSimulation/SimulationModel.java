@@ -16,7 +16,7 @@ import javax.swing.JPanel;
 
 public abstract class SimulationModel {		
 	
-	private static final boolean NO_OVERLAP = true;
+	private static final boolean CHECK_OVERLAP = false;
 	enum SoftError {
 		NONE,
 		WRONG_MOVING;
@@ -107,13 +107,38 @@ public abstract class SimulationModel {
 				l.getY()/sectorH);
 	}
 	
+	public List<User> getNearbyUsers(User u) {
+		List<User> ret = new ArrayList<User>();
+
+		Point xSector = locationToSector(u.getLocation());
+		
+		for(int i=0; i <sectorOffsets.length; ++i) {
+			Point currentSector = xSector.add(sectorOffsets[i]);
+			if (currentSector.getX() < 0 || currentSector.getX() >= numSectorsW ||
+				    currentSector.getY() < 0 || currentSector.getY() >= numSectorsH) { 
+				continue;
+			}
+			for (User user : sector[currentSector.getX()][currentSector.getY()]) {
+				ret.add(user);
+			}
+		}
+		
+		return ret;
+	}
+	
 	public boolean validatePosition(Point x, int excludingIndex) {
+		return validatePosition(x, excludingIndex, CHECK_OVERLAP);
+	}
+	
+	public boolean validatePosition(Point x,
+			int excludingIndex,
+			boolean checkOverlap) {
 		if (x.getX() <= User.USER_RADIUS || 
 		    x.getX() >= width-User.USER_RADIUS ||
 		    x.getY() <= User.USER_RADIUS ||
 		    x.getY() >= height - User.USER_RADIUS) return false;
 		
-		if (NO_OVERLAP) {
+		if (checkOverlap) {
 			Point xSector = locationToSector(x);
 			
 			for(int i=0; i <sectorOffsets.length; ++i) {
