@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import cern.jet.random.Zeta;
+import cern.jet.random.engine.MersenneTwister;
+
 import com.sun.xml.internal.bind.v2.model.core.MaybeElement;
 
 import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
@@ -11,8 +14,11 @@ import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
 public class SocialUser extends User {
 	static AdvancedRandom generator =  new AdvancedRandom (System.currentTimeMillis());
 
-	private static final int EXPECTED_TOTOAL_FRIENDS = 10;
+	private static final int EXPECTED_TOTAL_FRIENDS = 10;
 	private static final int INV_PROBABILITY_ADDING_FRIEND = 50;
+	
+	private static final Zeta degreeDistribution =
+			new Zeta(1.07, 0.0, new MersenneTwister((int)System.currentTimeMillis()));
 	
 	private int maxFriends;
 	
@@ -24,7 +30,8 @@ public class SocialUser extends User {
 			throws CannotPlaceUserException {
 		super(mainModel);
 		// TODO: This should be power distribution
-		maxFriends = (int)generator.nextExponential(1.0/EXPECTED_TOTOAL_FRIENDS);
+		maxFriends = degreeDistribution.nextInt();
+		//(int)generator.nextExponential(1.0/EXPECTED_TOTAL_FRIENDS);
 		friends = new ArrayList<User>();
 		constructorDone = true;
 	}

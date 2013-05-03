@@ -39,7 +39,7 @@ public class RealisticModel extends SimulationModel {
 	private static final int SIMULATION_MORNING = 5000;
 	private static final int SIMULATION_EVENING = 5000;
 	private static final int SIMULATION_COMMUNITIES = 50;
-	private static final int SIMULATION_START_USERS = 400;
+	private static final int SIMULATION_START_USERS = 1000;
 
 	private final static boolean DEBUG_LATEST_USER = false;
 	Map<Integer, RealisticUser> users;
@@ -145,7 +145,7 @@ public class RealisticModel extends SimulationModel {
 		socialStats.addActionListener(new ActionListener() {		
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(o, computeSocialGraphStats());
+				displaySocialGraphStats(o);
 			}
 		});
 	}
@@ -187,7 +187,9 @@ public class RealisticModel extends SimulationModel {
 			for (RealisticUser u : usersToRemove) {
 				activeUsers.remove(u);
 			}
-
+			if (getStepsExecuted()%500 == 0)
+				checkPointGraphProperties();
+			
 			onChange();
 			running.set(false);
 
@@ -242,7 +244,8 @@ public class RealisticModel extends SimulationModel {
 	@Override
 	public void postpaint(Graphics g) {
 		if (drawSocialGraph.isSelected()) {
-			g.setColor(new Color(200,0,0));
+			g.setColor(new Color(255.0f/255,64.0f/255,64.0f/255,0.25f));
+
 			for (Integer i : users.keySet()) {
 				SocialUser u = users.get(i);
 				for (User friend : u.getFriends()) {
@@ -255,8 +258,35 @@ public class RealisticModel extends SimulationModel {
 			super.postpaint(g);
 		}
 	}
+	
+	private GraphProperties.Graph generateSocialGraph() {
+		List<List<Integer>> adjacency =
+				new ArrayList<List<Integer>>(User.getNumerOfUsers());
 
+		for (int i = 0; i<User.getNumerOfUsers(); ++i) {
+			adjacency.add(new ArrayList<Integer>());
+		}
+		
+		for (Integer i : users.keySet()) {
+			SocialUser u = users.get(i);
+			List<Integer> friends = adjacency.get(u.getID());
+			for (User friend : u.getFriends()) {
+				friends.add(friend.getID());
+			}
+		}
+		return new GraphProperties.Graph(User.getNumerOfUsers(), adjacency);
+	}
 
+	public void displaySocialGraphStats(JPanel parent) {
+		
+		
+		 (new GraphProperties(generateSocialGraph())).display(parent);
+	}
+
+	public void checkPointGraphProperties() {
+		(new GraphProperties(generateSocialGraph())).
+		checkPointDynamicProperties(getStepsExecuted());
+	}
 
 	private static class Community {
 		// top left corner of that square
@@ -333,30 +363,6 @@ public class RealisticModel extends SimulationModel {
 					);
 		}
 	}
-
-	public String computeSocialGraphStats() {
-		List<List<Integer>> adjacency =
-				new ArrayList<List<Integer>>(User.getNumerOfUsers());
-
-		for (int i = 0; i<User.getNumerOfUsers(); ++i) {
-			adjacency.add(new ArrayList<Integer>());
-		}
-		
-		for (Integer i : users.keySet()) {
-			SocialUser u = users.get(i);
-			List<Integer> friends = adjacency.get(u.getID());
-			for (User friend : u.getFriends()) {
-				friends.add(friend.getID());
-			}
-		}
-		GraphProperties.Graph graph =
-				new GraphProperties.Graph(User.getNumerOfUsers(), adjacency);
-		
-		return (new GraphProperties(graph)).toString();
-	}
-
-
-
 
 	private static class RealisticUser extends SocialUser {
 

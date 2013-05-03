@@ -30,6 +30,7 @@ public class GlobalOptionsPanel extends JPanel {
 	private JButton addUser;
 	private JButton randomSimulation;
 	private JCheckBox showRanges;
+	private JCheckBox updateUI;
 
 	private SimulationModel model;
 	
@@ -37,6 +38,10 @@ public class GlobalOptionsPanel extends JPanel {
 	private int preferredHeight;
 	private int lastYOnGrid;
 	private GridBagConstraints c;
+	
+	public boolean shouldUpdateUI() {
+		return updateUI.isSelected();
+	}
 	
 	GlobalOptionsPanel(SimulationModel mainModel) {
 		super(new GridBagLayout());        
@@ -51,6 +56,7 @@ public class GlobalOptionsPanel extends JPanel {
 		c.gridy = 1; add(addUser = new JButton("Add user"),c);
 		c.gridy = 2; add(randomSimulation = new JButton(Strings.START_SIMULATION),c);
 		c.gridy = 3; add(showRanges = new JCheckBox("Show radio ranges"),c);
+		c.gridy = 4; add(updateUI = new JCheckBox("Draw Simulation (uncheck for performance)"),c);
 		
 		clearBoard.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -88,10 +94,14 @@ public class GlobalOptionsPanel extends JPanel {
 		});
 		showRanges.setSelected(true);
 		
-		setPreferredSize(new Dimension(350,200));
-		//setSize(400, 500);
+		updateUI.setSelected(true);
+			
 		preferredWidth = 350;
-		preferredHeight = 200;
+		preferredHeight = 230;
+		
+		setPreferredSize(new Dimension(preferredWidth,preferredHeight));
+		//setSize(400, 500);
+
 		lastYOnGrid = 3;
 		
 		model.addToOptionsMenu(this);
