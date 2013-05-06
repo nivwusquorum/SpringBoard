@@ -37,6 +37,7 @@ public class GlobalOptionsPanel extends JPanel {
 	private int preferredWidth;
 	private int preferredHeight;
 	private int lastYOnGrid;
+	private int lastXOnGrid;
 	private GridBagConstraints c;
 	
 	public boolean shouldUpdateUI() {
@@ -102,7 +103,8 @@ public class GlobalOptionsPanel extends JPanel {
 		setPreferredSize(new Dimension(preferredWidth,preferredHeight));
 		//setSize(400, 500);
 
-		lastYOnGrid = 3;
+		lastYOnGrid = c.gridy;
+		lastXOnGrid = 0;
 		
 		model.addToOptionsMenu(this);
 		
@@ -110,8 +112,15 @@ public class GlobalOptionsPanel extends JPanel {
 	
 	public void addElement(JComponent e, int preferredElementHeight) {
 		c.gridy = ++lastYOnGrid;
+		lastXOnGrid = 0;
 		this.preferredHeight += preferredElementHeight;
 		add(e, c);
 		setPreferredSize(new Dimension(preferredWidth, preferredHeight));
+	}
+	
+	public void addElementToTheRight(JComponent e) {
+		c.gridy = lastYOnGrid;
+		c.gridx = ++ lastXOnGrid;
+		add(e,c);
 	}
 }

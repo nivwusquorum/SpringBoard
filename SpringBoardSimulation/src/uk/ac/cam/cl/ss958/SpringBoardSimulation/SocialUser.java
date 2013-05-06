@@ -22,10 +22,8 @@ public class SocialUser extends User {
 	
 	private int maxFriends;
 	
-	private List<User> friends; 
-	
-	private boolean constructorDone = false;
-	
+	protected List<User> friends; 
+		
 	public SocialUser(SimulationModel mainModel)
 			throws CannotPlaceUserException {
 		super(mainModel);
@@ -33,7 +31,6 @@ public class SocialUser extends User {
 		maxFriends = degreeDistribution.nextInt();
 		//(int)generator.nextExponential(1.0/EXPECTED_TOTAL_FRIENDS);
 		friends = new ArrayList<User>();
-		constructorDone = true;
 	}
 
 	public List<User> getFriends() {
@@ -44,8 +41,6 @@ public class SocialUser extends User {
 	public void setLocation(Point location) throws CannotPlaceUserException {
 		// TODO Auto-generated method stub
 		super.setLocation(location);
-		if (constructorDone)
-			maybeMakeFriends();
 	}
 	
 	private int manhattanDistance(User a, User b) {
@@ -76,6 +71,11 @@ public class SocialUser extends User {
 			}
 			
 		}
+	}
+	
+	public void step() {
+		super.step();
+		maybeMakeFriends();
 	}
 	
 }

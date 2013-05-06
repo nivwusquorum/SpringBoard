@@ -72,12 +72,16 @@ public class User implements Comparable<User> {
 		range = r;
 	}
 	
-	public void draw(Graphics g, boolean selected) {
+	protected void drawMe(Graphics g) {
 		g.setColor(Colors.USER_COLOR);
 		g.fillOval(location.getX() - USER_RADIUS, 
 				   location.getY() - USER_RADIUS,
 				   2*USER_RADIUS,
 				   2*USER_RADIUS);
+	}
+	
+	public void draw(Graphics g, boolean selected) {
+		drawMe(g);
 		if (selected) {
 			g.setColor(Colors.SELECTED_USER_COLOR);
 			for(int i=0; i<SELECTION_BOLDNESS; ++i) {
@@ -122,4 +126,6 @@ public class User implements Comparable<User> {
 		if (o == null) return -1;
 		return ((Integer)this.getID()).compareTo(o.getID());
 	}
+	
+	public void step() { }
 }

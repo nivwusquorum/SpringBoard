@@ -10,5 +10,10 @@ public class Tools {
 		return a.getX() == b.getX() && a.getY() == b.getY();
 	}
 
+	public static double pointsDistanceSquared(Point a, Point b) {
+		double dx = a.getX() - b.getX();
+		double dy = a.getY() - b.getY();
+		return dx*dx + dy*dy;
+	}
 
 }

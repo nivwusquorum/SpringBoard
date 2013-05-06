@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -26,20 +27,21 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import com.sun.org.apache.xerces.internal.impl.xpath.XPath.Step;
+import com.sun.xml.internal.bind.v2.runtime.reflect.Accessor.SetterOnlyReflection;
 
 import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
 
 public class RealisticModel extends SimulationModel {
 	static Random generator =  new Random (System.currentTimeMillis());
 
-	private static final int SIMULATION_WAITING_INVLAMBDA = 400;
-	private static final int SIMULATION_STEP_LENGH_MS = 1;
+	public static final int SIMULATION_WAITING_INVLAMBDA = 400;
+	public static final int SIMULATION_STEP_LENGH_MS = 1;
 
-	private static final int SIMULATION_DAY = 10000;
-	private static final int SIMULATION_MORNING = 5000;
-	private static final int SIMULATION_EVENING = 5000;
-	private static final int SIMULATION_COMMUNITIES = 50;
-	private static final int SIMULATION_START_USERS = 1000;
+	public static final int SIMULATION_DAY = 10000;
+	public static final int SIMULATION_MORNING = 5000;
+	public static final int SIMULATION_EVENING = 5000;
+	public static final int SIMULATION_COMMUNITIES = 50;
+	public static final int SIMULATION_START_USERS = 1000;
 
 	private final static boolean DEBUG_LATEST_USER = false;
 	Map<Integer, RealisticUser> users;
@@ -62,26 +64,6 @@ public class RealisticModel extends SimulationModel {
 
 	Community [] communities;
 
-	private static class SimulationEvent implements Comparable<SimulationEvent>{
-		public long time;
-		public RealisticUser node;
-		public SimulationEvent(long time, RealisticUser node) {
-			this.time = time;
-			this.node = node;
-		}
-		@Override
-		public int compareTo(SimulationEvent o) {
-			if (this.time == o.time) {
-				return ((Integer)node.getID()).compareTo(o.node.getID());
-			} else {
-				return ((Long)time).compareTo(o.time);
-			}
-		}
-	}
-
-	PriorityQueue<SimulationEvent> simulationEvents;
-	Set<RealisticUser> activeUsers;
-
 	public RealisticModel(int width, int height, int squareWidth, int squareHeight) throws Exception {
 		super(width, height);
 		assert SIMULATION_MORNING + SIMULATION_EVENING == SIMULATION_DAY;
@@ -99,9 +81,6 @@ public class RealisticModel extends SimulationModel {
 			communities[i] = new Community(this);
 		}
 
-		activeUsers = new TreeSet<RealisticUser>();
-		simulationEvents = new PriorityQueue<SimulationEvent>();
-
 		for(int i=0; i < SIMULATION_START_USERS; ++i) {
 			AddRandomUser();
 		}
@@ -117,6 +96,22 @@ public class RealisticModel extends SimulationModel {
 	private JLabel executionTime;
 
 	private JCheckBox drawSocialGraph;
+	
+	private JLabel trackedMessage;
+	private JButton disableTracking;
+	
+	public void setTrackedMessage(Integer tMsg) {
+		if (tMsg == null) {
+			trackedMessage.setText("No message tracked.");
+			disableTracking.setEnabled(false);
+		} else {
+			trackedMessage.setText("Tracking message: " + tMsg);
+			disableTracking.setEnabled(true);
+		}
+		SpringBoardUser.setTrackedMessage(tMsg);
+		onChange();
+	}
+	
 	@Override
 	public void addToOptionsMenu(final GlobalOptionsPanel o) {
 		super.addToOptionsMenu(o);
@@ -148,6 +143,22 @@ public class RealisticModel extends SimulationModel {
 				displaySocialGraphStats(o);
 			}
 		});
+		
+		trackedMessage = new JLabel("");
+		disableTracking =new JButton("x");
+		disableTracking.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				setTrackedMessage(null);
+			}
+		});
+		JPanel tracking = new JPanel();
+		tracking.setLayout(
+				new BoxLayout(tracking, BoxLayout.X_AXIS));
+		tracking.add(trackedMessage);
+		tracking.add(new JLabel("    "));
+		tracking.add(disableTracking);
+		o.addElement(tracking, 30);
+		setTrackedMessage(null);
 	}
 
 	public void updateTimeLabel() {
@@ -157,7 +168,9 @@ public class RealisticModel extends SimulationModel {
 		timeLabel.setText("Time: " + stepsInDay +"/" + SIMULATION_DAY + " " +
 				(isMorning ? "(morning)" : "(evening)"));
 
-		executionTime.setText("ms per step: " + String.format("%.3G", new Double(averageStepExecutionTime)));
+		executionTime.setText("ms per step: " +
+				String.format("%.3G", 
+				new Double(Math.max(0, averageStepExecutionTime))));
 	}
 
 	AtomicBoolean running;
@@ -171,22 +184,12 @@ public class RealisticModel extends SimulationModel {
 			long startTime = System.nanoTime();
 			++simulationSteps;
 
-			while(simulationEvents.peek() != null &&
-					simulationEvents.peek().time <= simulationSteps) {
-				activeUsers.add(simulationEvents.poll().node);
-			}
-			List<RealisticUser> usersToRemove = new ArrayList<RealisticUser>();
-			for (RealisticUser u: activeUsers) {
-				long nextWakeUp = u.maybeMove();
-				if (nextWakeUp > 0) {
-					simulationEvents.add(new SimulationEvent(nextWakeUp, u));
-					usersToRemove.add(u);
-				}
+	
+			for (Integer i : users.keySet()) {
+				RealisticUser u = users.get(i);
+				u.step();
 			}
 
-			for (RealisticUser u : usersToRemove) {
-				activeUsers.remove(u);
-			}
 			if (getStepsExecuted()%500 == 0)
 				checkPointGraphProperties();
 			
@@ -208,7 +211,6 @@ public class RealisticModel extends SimulationModel {
 			int communityIndex = generator.nextInt(communities.length);
 			RealisticUser u = new RealisticUser(this, communities[communityIndex]);
 			users.put(u.getID(), u);
-			activeUsers.add(u);
 			onChange();
 			return true;
 		} catch(CannotPlaceUserException e) {
@@ -364,7 +366,7 @@ public class RealisticModel extends SimulationModel {
 		}
 	}
 
-	private static class RealisticUser extends SocialUser {
+	private static class RealisticUser extends SpringBoardUser {
 
 		private long wakeMeUpAt = 0;
 		private RealisticMoveGenerator moveGenerator;
@@ -429,30 +431,13 @@ public class RealisticModel extends SimulationModel {
 		public void setOptionsPanel(UserOptionsPanel panel) {
 			super.setOptionsPanel(panel);
 			if (panel != null) {
-				JPanel additionalPanel = new JPanel(new GridBagLayout());
-				additionalPanel.setBorder(new EmptyBorder(0, 0, 0, 0) );
-
-				GridBagConstraints c = new GridBagConstraints();
-				c.fill = GridBagConstraints.HORIZONTAL;
-				c.insets = new Insets(2,2,2,2);
-				c.anchor = GridBagConstraints.NORTH;
-
-				c.gridx = 0; c.gridy=0; c.weighty = 0.0;
-				additionalPanel.add(new JLabel("Location: "),c);
-				c.gridx = 1; c.gridy=0; c.weighty = 0.0;
 				locationLabel = new JLabel("");
-				additionalPanel.add(locationLabel,c);
+				panel.addElement(locationLabel, "Location: ");
 
-				c.gridx = 0; c.gridy=1; c.weighty = 0.0;
-				additionalPanel.add(new JLabel("Target: "),c);
-				c.gridx = 1; c.gridy=1; c.weighty = 0.0;
 				targetLabel = new JLabel("");
-				additionalPanel.add(targetLabel,c);
+				panel.addElement(targetLabel, "Target: ");
 
 				maybeSetLabels();
-
-				c.gridx = 0; c.gridy = 2; c.weighty = 0.0;
-				panel.add(additionalPanel,c);
 			}
 		}
 
@@ -464,7 +449,8 @@ public class RealisticModel extends SimulationModel {
 		};
 
 		// returns 0 if moving otherwise returns time of next wakeUp
-		public long maybeMove() {
+		public void step() {
+			super.step();
 			if(wakeMeUpAt <= model.getStepsExecuted()) {
 				try {
 					int step = moveGenerator.advance();
@@ -477,9 +463,6 @@ public class RealisticModel extends SimulationModel {
 									1.0/SIMULATION_WAITING_INVLAMBDA);
 					maybeSetLabels();
 				}
-				return 0;
-			} else {
-				return wakeMeUpAt;
 			}
 		}
 	}
@@ -533,6 +516,7 @@ public class RealisticModel extends SimulationModel {
 			if(embarassinglyBadProgress()) {
 				stepsMade = 0;
 				backOffTime = generator.nextInt(100);
+				startingDistanceToTarget = getDistanceToTarget(getCurrentLocation());
 				backOffStep = generator.nextInt(possibleSteps.length);
 			}
 
