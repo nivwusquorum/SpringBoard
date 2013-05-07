@@ -44,7 +44,8 @@ public class SpringBoardUser extends SocialUser {
 	public static final int WIFI_MESSAGES_PER_TICK = 7000;
 	public static final int BLUETOOTH_QUERY_FREQUENCY = 100;
 	public static final int BLUETOOTH_MESSAGES_PER_TICK = 60;
-	public static final MessageExchangeProtocol EXCHANGE = new NaiveMessageExchange();
+	public static final MessageExchangeProtocol EXCHANGE = new BloomFilterMessageExchange();
+														   // new NaiveMessageExchange();
 	
 	static Integer trackedMessageNumber;
 		

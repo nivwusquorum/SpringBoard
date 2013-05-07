@@ -52,9 +52,9 @@ public class RealisticModel extends SimulationModel {
 	public int getSquareWidth() { return squareWidth; }
 	public int getSquareHeight() { return squareHeight; }
 
-	private long simulationSteps = 0;
+	private static long simulationSteps = 0;
 
-	public long getStepsExecuted() {
+	public static long getStepsExecuted() {
 		return simulationSteps;
 	}
 
