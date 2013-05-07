@@ -34,7 +34,7 @@ public class SpringBoardUser extends SocialUser {
 	public static final int MESSAGES_CAPACITY_OTHER = 500;
 	public static final int MESSAGES_CAPACITY_FRIEND = 500;
 	public static final int MESSAGES_TOOTHER_INV_PROBABILITY = 10;
-	public static final boolean USE_WIFI = false;
+	public static final boolean USE_WIFI = true;
 	public static final boolean USE_BLUETOOTH = true;
 	public static final int WIFI_MIN_RANGE = 30;
 	public static final int WIFI_MAX_RANGE = 50;
@@ -382,7 +382,7 @@ public class SpringBoardUser extends SocialUser {
 			target = null;
 		}
 		
-		private void step(long step) {
+		public void step(long step) {
 			if (!USE_BLUETOOTH) 
 				return;
 			if (state == INACTIVE) {
@@ -437,6 +437,7 @@ public class SpringBoardUser extends SocialUser {
 	}
 	
 	private WifiCard userWifi;
+	private BluetoothCard userBluetooth;
 	public MessageSystem messages = new MessageSystem();
 	private RealisticModel model;
 	
@@ -452,6 +453,7 @@ public class SpringBoardUser extends SocialUser {
 			mf = new SpringBoardMessageFactory(mainModel);
 		}
 		userWifi = new WifiCard();
+		userBluetooth = new BluetoothCard();
 		
 		messagesPerDayTarget = messagesPerDayDistribution.nextInt();
 		users.put(this.getID(), this);
@@ -459,7 +461,12 @@ public class SpringBoardUser extends SocialUser {
 
 	private SpringBoardUser generateMessageTarget() {
 		if (generator.nextInt(MESSAGES_TOOTHER_INV_PROBABILITY) == 0 || friends.size() == 0) {
-			return users.get(generator.nextInt(getNumerOfUsers()));
+			SpringBoardUser r = users.get(generator.nextInt(getNumerOfUsers()));
+			// Don't message myself
+			while ( r.getID() == getID()) {
+				r = users.get(generator.nextInt(getNumerOfUsers()));
+			}
+			return r;
 		} else {
 			return (SpringBoardUser)friends.get(generator.nextInt(friends.size()));
 		}
@@ -481,6 +488,7 @@ public class SpringBoardUser extends SocialUser {
 		maybeGenerateMessage();
 		
 		userWifi.step(model.getStepsExecuted());
+		userBluetooth.step(model.getStepsExecuted());
 		
 	}
 	

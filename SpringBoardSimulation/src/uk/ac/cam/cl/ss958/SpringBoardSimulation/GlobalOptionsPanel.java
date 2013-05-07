@@ -29,7 +29,6 @@ public class GlobalOptionsPanel extends JPanel {
 	private JButton clearBoard;
 	private JButton addUser;
 	private JButton randomSimulation;
-	private JCheckBox showRanges;
 	private JCheckBox updateUI;
 
 	private SimulationModel model;
@@ -56,8 +55,7 @@ public class GlobalOptionsPanel extends JPanel {
 		c.gridy = 0; add(clearBoard = new JButton("Clear board"),c); 
 		c.gridy = 1; add(addUser = new JButton("Add user"),c);
 		c.gridy = 2; add(randomSimulation = new JButton(Strings.START_SIMULATION),c);
-		c.gridy = 3; add(showRanges = new JCheckBox("Show radio ranges"),c);
-		c.gridy = 4; add(updateUI = new JCheckBox("Draw Simulation (uncheck for performance)"),c);
+		c.gridy = 3; add(updateUI = new JCheckBox("Draw Simulation (uncheck for performance)"),c);
 		
 		clearBoard.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -86,20 +84,12 @@ public class GlobalOptionsPanel extends JPanel {
 			}
 		});
 		
-		showRanges.addActionListener(new ActionListener() {
-			
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				model.setDrawRanges(showRanges.isSelected());
-			}
-		});
-		showRanges.setSelected(false);
-		model.setDrawRanges(false);
+	
 		
 		updateUI.setSelected(true);
 			
 		preferredWidth = 350;
-		preferredHeight = 230;
+		preferredHeight = 200;
 		
 		setPreferredSize(new Dimension(preferredWidth,preferredHeight));
 		//setSize(400, 500);

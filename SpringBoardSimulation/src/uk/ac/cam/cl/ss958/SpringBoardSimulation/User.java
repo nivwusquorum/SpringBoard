@@ -91,9 +91,6 @@ public class User implements Comparable<User> {
 						2*(USER_RADIUS-i));
 			}
 		}
-		g.setColor(Colors.RANGE_COLOR);
-		if (model.drawRanges()) 
-				g.drawOval(location.getX()- bluetoothRange, location.getY()- bluetoothRange, 2*bluetoothRange, 2*bluetoothRange);
 	}
 	
 	public User(SimulationModel mainModel) throws CannotPlaceUserException {

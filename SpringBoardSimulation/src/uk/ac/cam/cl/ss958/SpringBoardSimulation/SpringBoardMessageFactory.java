@@ -386,6 +386,7 @@ public class SpringBoardMessageFactory {
 			
 			// add a line plot to the PlotPanel
 			plot.addScatterPlot("my plot", x, y);
+			plot.setFixedBounds(1, 0.0,1.0);
 			 
 			plot.setPreferredSize(new Dimension(400,400));
 			// put the PlotPanel in a JFrame, as a JPanel

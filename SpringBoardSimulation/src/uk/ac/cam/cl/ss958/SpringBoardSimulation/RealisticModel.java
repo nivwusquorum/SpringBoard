@@ -97,6 +97,7 @@ public class RealisticModel extends SimulationModel {
 
 	private JCheckBox drawSocialGraph;
 	private JCheckBox drawAP;
+	private JCheckBox showRanges;
 	
 	private JLabel trackedMessage;
 	private JButton disableTracking;
@@ -116,6 +117,20 @@ public class RealisticModel extends SimulationModel {
 	@Override
 	public void addToOptionsMenu(final GlobalOptionsPanel o) {
 		super.addToOptionsMenu(o);
+		
+		o.addElement(showRanges = new JCheckBox("Show bluetooth ranges"),30);
+
+		
+		showRanges.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				setDrawRanges(showRanges.isSelected());
+			}
+		});
+		showRanges.setSelected(false);
+		setDrawRanges(false);
+		
 		timeLabel = new JLabel("");
 		o.addElement(timeLabel, 30);
 
@@ -306,8 +321,28 @@ public class RealisticModel extends SimulationModel {
 					}
 				}
 			}
-			super.postpaint(g);
 		}
+		if (showRanges.isSelected()) {
+			boolean drawSpecificUser = selectedUser >=0;
+			RealisticUser specificUser = null;
+			if (drawSpecificUser) {
+				specificUser = users.get(selectedUser);
+				assert specificUser != null;
+			}
+			
+			g.setColor(Colors.RANGE_COLOR);
+			for (Integer i : users.keySet()) {
+				SocialUser u = users.get(i);
+				if (drawSpecificUser && u.getID() != selectedUser &&
+					 !specificUser.getFriends().contains(u))
+					continue;
+				g.drawOval(u.getLocation().getX()- u.bluetoothRange,
+						u.getLocation().getY()- u.bluetoothRange,
+						2*u.bluetoothRange,
+						2*u.bluetoothRange);
+			}
+		}
+		super.postpaint(g);
 	}
 	
 	private GraphProperties.Graph generateSocialGraph() {
