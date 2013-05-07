@@ -34,12 +34,18 @@ public class SpringBoardUser extends SocialUser {
 	public static final int MESSAGES_CAPACITY_OTHER = 500;
 	public static final int MESSAGES_CAPACITY_FRIEND = 500;
 	public static final int MESSAGES_TOOTHER_INV_PROBABILITY = 10;
-	public static final boolean USE_WIFI = true;
+	public static final boolean USE_WIFI = false;
+	public static final boolean USE_BLUETOOTH = true;
 	public static final int WIFI_MIN_RANGE = 30;
 	public static final int WIFI_MAX_RANGE = 50;
 	public static final int WIFI_STATIONS_NUMBER = RealisticModel.SIMULATION_COMMUNITIES;
 	public static final int WIFI_MAX_CONNECTIONS = 10;
 	public static final int WIFI_QUERY_FREQUENCY = 100;
+	public static final int WIFI_MESSAGES_PER_TICK = 7000;
+	public static final int BLUETOOTH_QUERY_FREQUENCY = 100;
+	public static final int BLUETOOTH_MESSAGES_PER_TICK = 60;
+	public static final MessageExchangeProtocol EXCHANGE = new NaiveMessageExchange();
+	
 	static Integer trackedMessageNumber;
 		
 	private static final Map<Integer, SpringBoardUser> users;
@@ -129,6 +135,11 @@ public class SpringBoardUser extends SocialUser {
 			mf.display(parent);
 	}
 	
+	public static void checkPointMessageStats() {
+		if (mf != null) 
+			mf.checkPointMessagesStats();
+	}
+	
 	static {
 		springboardGenerator = new Random(System.currentTimeMillis());
 		users = new HashMap<Integer, SpringBoardUser>();
@@ -185,11 +196,11 @@ public class SpringBoardUser extends SocialUser {
 		}
 	}
 	
-	private class MessageSystem implements ListModel { 
+	public class MessageSystem implements ListModel { 
 		MessageStorage msgFriends = new MessageStorage(MESSAGES_CAPACITY_FRIEND);
 		MessageStorage msgOthers = new MessageStorage(MESSAGES_CAPACITY_OTHER);
 		
-		private void addMessage(int msg, boolean friend) {
+		public void addMessage(int msg, boolean friend) {
 			Integer index = friend ? msgFriends.addMessage(msg) : msgOthers.addMessage(msg);
 			if (index != null) {
 				index = friend ? index : msgFriends.getSize() + index;
@@ -269,6 +280,8 @@ public class SpringBoardUser extends SocialUser {
 		}
 		
 		public void step(long tick) {
+			if (!USE_WIFI) 
+				return;
 			if (state == DISCONNECTED) {
 				AccessPointNetwork.AccessPoint near = wifi.getClosestAccessPoint(getLocation());
 				if (near == null) return;
@@ -317,15 +330,114 @@ public class SpringBoardUser extends SocialUser {
 					alreadyTriedUsers = null;
 					protocolState = IDLE;
 				} else {
-					alreadyTriedUsers.add(nextToBeContacted);
-					exchangeMessages(nextToBeContacted);
+					if(EXCHANGE.exchange(SpringBoardUser.this,
+									  nextToBeContacted,
+									  WIFI_MESSAGES_PER_TICK)) {
+						alreadyTriedUsers.add(nextToBeContacted);
+					}
 				}
 			}
 		}
 	}
 	
+	private class BluetoothCard {
+		private static final int INACTIVE = 0;
+		private static final int ACTIVE = 1;
+		private static final int CONNECTING = 2;
+		private static final int CONNECTED = 3;
+		
+		private int state = INACTIVE;
+		private SpringBoardUser target;
+		private int queryOffset;
+		private Map<SpringBoardUser, Long> lastContact;
+		
+		public BluetoothCard() {
+			queryOffset = springboardGenerator.nextInt(BLUETOOTH_QUERY_FREQUENCY);
+			lastContact = new HashMap<SpringBoardUser, Long>();
+		}
+		
+		private double square(double a) {
+			return a*a;
+		}
+		
+		private boolean inRange(User u) {
+			return Tools.pointsDistanceSquared(getLocation(), u.getLocation()) <=
+					square(Math.min(SpringBoardUser.this.bluetoothRange, u.bluetoothRange));
+		}
+		
+		private List<SpringBoardUser> getNearbyBluetooth() {
+			List<User> nearbyUsers = model.getNearbyUsers(SpringBoardUser.this);
+			List<SpringBoardUser> ret = new ArrayList<SpringBoardUser>();
+			for (User u : nearbyUsers) {
+				if (inRange(u) &&
+						SpringBoardUser.this.getFriends().contains((SpringBoardUser)u)) {
+					ret.add((SpringBoardUser)u);
+				}
+			}
+			return ret;
+		}
+		
+		private void inactivate() {
+			state = INACTIVE;
+			target = null;
+		}
+		
+		private void step(long step) {
+			if (!USE_BLUETOOTH) 
+				return;
+			if (state == INACTIVE) {
+				if (step%BLUETOOTH_QUERY_FREQUENCY == queryOffset) {
+					state = ACTIVE;
+				} else {
+					return;
+				}
+			}
+			
+			if (state == ACTIVE) {
+				List<SpringBoardUser> near = getNearbyBluetooth();
+				if (near.size() == 0) {
+					inactivate();
+					return;
+				} else {
+					// contact the node that you haven't contacted for longest time.
+					Long best = lastContact.get(near.get(0));
+					SpringBoardUser bestUser = near.get(0);
+					for (SpringBoardUser u : near) {
+						Long lastContactU = lastContact.get(u);
+						if (best != null && (lastContactU == null || lastContactU < best)) {
+							best = lastContactU;
+							bestUser = u;
+						}
+					}
+					
+					target = bestUser;
+					state = CONNECTING;
+					return;
+				}
+			} else if (state == CONNECTING) {
+				if (!inRange(target)) {
+					state = ACTIVE;
+					return;
+				} else {
+					state = CONNECTED;
+					// let run
+				}
+			} 
+			
+			assert state == CONNECTED;
+			
+			if (EXCHANGE.exchange(SpringBoardUser.this, target, BLUETOOTH_MESSAGES_PER_TICK)) {
+				lastContact.put(target, step);
+				state = ACTIVE;
+				target = null;
+			}
+			
+		}
+		
+	}
+	
 	private WifiCard userWifi;
-	private MessageSystem messages = new MessageSystem();
+	public MessageSystem messages = new MessageSystem();
 	private RealisticModel model;
 	
 	
@@ -372,17 +484,9 @@ public class SpringBoardUser extends SocialUser {
 		
 	}
 	
-	private void sendMessages(SpringBoardUser target) {
-		boolean areFriends = target.getFriends().contains(this);
-		for (int i=0; i<messages.getSize(); ++i) {
-			target.messages.addMessage((Integer)messages.getElementAt(i), areFriends);
-		}
-	}
+
 	
-	private void exchangeMessages(SpringBoardUser with) {
-		this.sendMessages(with);
-		with.sendMessages(this);
-	}
+
 	
 	@Override
 	protected void drawMe(Graphics g) {

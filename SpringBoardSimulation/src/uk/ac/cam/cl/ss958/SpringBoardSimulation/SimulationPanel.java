@@ -5,7 +5,10 @@ import java.awt.Graphics;
 import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
@@ -14,12 +17,16 @@ public class SimulationPanel extends JPanel {
     private int width = 1; //Width of simulation board in pixels
     private int height = 1; //Height of simulation board in pixels
 
+    public boolean draw = true;
     
     private final SimulationModel model;
+    
+    private BufferedImage image; 
     
 	SimulationPanel(SimulationModel mainModel) throws Exception {
 		this.model = mainModel;
 
+		image = ImageIO.read(new File("einstein.png"));
 		computeSize();
 		
 		addMouseListener(new MouseAdapter(){ 
@@ -55,20 +62,26 @@ public class SimulationPanel extends JPanel {
 	}
 	
 	protected void paintComponent(Graphics g) {
-		if (model.isSoftError())
-			g.setColor(Colors.BACKGROUD_SOFT_ERROR_COLOR);
-		else
-			g.setColor(Colors.BACKGROUND_COLOR);
-		
-		g.fillRect(0, 0, width, height);
-
-		model.prepaint(g);
-		
-		for(Integer id : model.getUsers().keySet()) {
-			model.getUsers().get(id).draw(g, id == model.getSelectedUser());
+		if (draw) {
+			if (model.isSoftError())
+				g.setColor(Colors.BACKGROUD_SOFT_ERROR_COLOR);
+			else
+				g.setColor(Colors.BACKGROUND_COLOR);
+			
+			g.fillRect(0, 0, width, height);
+	
+			model.prepaint(g);
+			
+			for(Integer id : model.getUsers().keySet()) {
+				model.getUsers().get(id).draw(g, id == model.getSelectedUser());
+			}
+			
+			model.postpaint(g);
+		} else {
+			int height = image.getHeight()*getWidth()/image.getWidth();
+			int remHeight = getHeight() - height;
+			g.drawImage(image,0,remHeight/4,getWidth(), remHeight/4 + height, null);
 		}
-		
-		model.postpaint(g);
 	}
 	
 	private void computeSize() {

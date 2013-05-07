@@ -41,8 +41,17 @@ public class MainGui extends JFrame {
 		model = new RealisticModel(740, 670, 74, 67) {
 			@Override
 			protected void onChange() {
-				if (optionsPanel != null && globalOptionsPanel.shouldUpdateUI())
+				if (optionsPanel != null && globalOptionsPanel.shouldUpdateUI()) {
+					if(simulationPanel != null && !simulationPanel.draw) {
+						simulationPanel.draw = true;						
+					}
 					modelChanged();
+				} else {
+					if(simulationPanel != null && simulationPanel.draw) {
+						simulationPanel.draw = false;
+						modelChanged();
+					}
+				}
 			}
 		};
 		simulationPanel = new SimulationPanel(model);

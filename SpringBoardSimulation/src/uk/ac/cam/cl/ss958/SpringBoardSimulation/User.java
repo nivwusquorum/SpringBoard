@@ -26,7 +26,7 @@ public class User implements Comparable<User> {
 		numberOfIds = 0;
 	}
 	
-	protected int range;
+	protected int bluetoothRange;
 	protected int id;
 	protected SimulationModel model;
 	private Point location;
@@ -65,11 +65,11 @@ public class User implements Comparable<User> {
 	}
 
 	public int getRange() {
-		return range;
+		return bluetoothRange;
 	}
 	
 	public void setRange(int r) {
-		range = r;
+		bluetoothRange = r;
 	}
 	
 	protected void drawMe(Graphics g) {
@@ -93,7 +93,7 @@ public class User implements Comparable<User> {
 		}
 		g.setColor(Colors.RANGE_COLOR);
 		if (model.drawRanges()) 
-				g.drawOval(location.getX()- range, location.getY()- range, 2*range, 2*range);
+				g.drawOval(location.getX()- bluetoothRange, location.getY()- bluetoothRange, 2*bluetoothRange, 2*bluetoothRange);
 	}
 	
 	public User(SimulationModel mainModel) throws CannotPlaceUserException {
@@ -118,7 +118,7 @@ public class User implements Comparable<User> {
 		
 		id = numberOfIds++;
 		// TODO: change to exponential distribution
-		range = MIN_RANGE + generator.nextInt(MAX_RANGE-MIN_RANGE);
+		bluetoothRange = MIN_RANGE + generator.nextInt(MAX_RANGE-MIN_RANGE);
 	}
 
 	@Override

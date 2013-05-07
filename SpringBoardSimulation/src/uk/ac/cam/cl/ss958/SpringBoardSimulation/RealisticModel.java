@@ -189,9 +189,10 @@ public class RealisticModel extends SimulationModel {
 	public void updateTimeLabel() {
 		if (timeLabel == null) return;
 		long stepsInDay = getStepsExecuted()%SIMULATION_DAY;
+		long days = getStepsExecuted()/SIMULATION_DAY;
 		boolean isMorning = stepsInDay < SIMULATION_MORNING;
-		timeLabel.setText("Time: " + stepsInDay +"/" + SIMULATION_DAY + " " +
-				(isMorning ? "(morning)" : "(evening)"));
+		timeLabel.setText("Time: day " + days + " - " + stepsInDay +"/" + SIMULATION_DAY + " " +
+				(isMorning ? "(morning)" : "(evening)") + "");
 
 		executionTime.setText("ms per step: " +
 				String.format("%.3G", 
@@ -217,6 +218,9 @@ public class RealisticModel extends SimulationModel {
 
 			if (getStepsExecuted()%500 == 0)
 				checkPointGraphProperties();
+			
+			if (getStepsExecuted()%500 == 250)
+				SpringBoardUser.checkPointMessageStats();
 			
 			onChange();
 			running.set(false);
@@ -286,12 +290,17 @@ public class RealisticModel extends SimulationModel {
 	@Override
 	public void postpaint(Graphics g) {
 		if (drawSocialGraph.isSelected()) {
-			g.setColor(new Color(255.0f/255,64.0f/255,64.0f/255,0.25f));
-
+			if (selectedUser>=0) {
+				g.setColor(new Color(255, 0, 0));
+			} else {
+				g.setColor(new Color(255.0f/255,64.0f/255,64.0f/255,0.25f));
+			}
+			
 			for (Integer i : users.keySet()) {
+				if (selectedUser >= 0 && i != selectedUser) continue;
 				SocialUser u = users.get(i);
 				for (User friend : u.getFriends()) {
-					if (u.getID() < friend.getID()) {
+					if (u.getID() < friend.getID() || selectedUser >=0) {
 						g.drawLine(u.getLocation().getX(), u.getLocation().getY(),
 								friend.getLocation().getX(), friend.getLocation().getY());
 					}
