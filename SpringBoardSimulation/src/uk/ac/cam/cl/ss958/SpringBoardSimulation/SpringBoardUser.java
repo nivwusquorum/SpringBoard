@@ -15,6 +15,7 @@ import java.util.Set;
 
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
@@ -48,7 +49,7 @@ public class SpringBoardUser extends SocialUser {
 	private static Random springboardGenerator; 
 	private static SpringBoardMessageFactory mf;
 
-	private static class AccessPointNetwork {
+	static class AccessPointNetwork {
 		public class AccessPoint {
 			public final Point location;
 			public final int range;
@@ -87,6 +88,9 @@ public class SpringBoardUser extends SocialUser {
 
 		List<AccessPoint> APs;
 		
+		public List<AccessPoint> getAccessPoints() {
+			return APs;
+		}
 		
 		public AccessPoint getClosestAccessPoint(Point toWhere) {
 			double  minDist = -1;
@@ -111,11 +115,22 @@ public class SpringBoardUser extends SocialUser {
 		}
 	}
 	
-	private static AccessPointNetwork wifi;
+	public static AccessPointNetwork wifi;
+	
+	public static List<AccessPointNetwork.AccessPoint> getAccessPoints() {
+		if (wifi != null)
+			return wifi.getAccessPoints(); 
+		else 
+			return null;
+	}
+	
+	public static void displayMessageStatistics(JPanel parent) {
+		if (mf != null)
+			mf.display(parent);
+	}
 	
 	static {
 		springboardGenerator = new Random(System.currentTimeMillis());
-		mf = new SpringBoardMessageFactory();
 		users = new HashMap<Integer, SpringBoardUser>();
 	}
 	
@@ -141,10 +156,13 @@ public class SpringBoardUser extends SocialUser {
 		public Integer addMessage(int msg) {
 			Integer ret = null;
 			if (!messagesSet.contains(msg)) {
-				if (messages[nextSlot] != null)
+				if (messages[nextSlot] != null) {
 					messagesSet.remove(messages[nextSlot]);
+					mf.deleteMessage(msg);
+				}
 				messages[nextSlot] = msg;
 				messagesSet.add(msg);
+				mf.deliverMessage(msg, SpringBoardUser.this);
 				ret = nextSlot;
 				nextSlot++;
 				if (nextSlot == capacity)
@@ -317,6 +335,9 @@ public class SpringBoardUser extends SocialUser {
 		this.model = mainModel;
 		if (wifi == null) {
 			wifi = new AccessPointNetwork(mainModel);
+		}
+		if (mf == null) {
+			mf = new SpringBoardMessageFactory(mainModel);
 		}
 		userWifi = new WifiCard();
 		

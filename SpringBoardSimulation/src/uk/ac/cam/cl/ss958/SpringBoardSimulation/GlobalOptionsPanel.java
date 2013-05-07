@@ -93,7 +93,8 @@ public class GlobalOptionsPanel extends JPanel {
 				model.setDrawRanges(showRanges.isSelected());
 			}
 		});
-		showRanges.setSelected(true);
+		showRanges.setSelected(false);
+		model.setDrawRanges(false);
 		
 		updateUI.setSelected(true);
 			

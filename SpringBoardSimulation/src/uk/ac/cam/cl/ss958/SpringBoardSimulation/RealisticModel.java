@@ -96,6 +96,7 @@ public class RealisticModel extends SimulationModel {
 	private JLabel executionTime;
 
 	private JCheckBox drawSocialGraph;
+	private JCheckBox drawAP;
 	
 	private JLabel trackedMessage;
 	private JButton disableTracking;
@@ -123,8 +124,8 @@ public class RealisticModel extends SimulationModel {
 		updateTimeLabel();
 
 		drawSocialGraph = new JCheckBox();
-		drawSocialGraph.setSelected(true);
-		drawSocialGraph.setText("Social Graph");
+		drawSocialGraph.setSelected(false);
+		drawSocialGraph.setText("Draw Social Graph");
 		drawSocialGraph.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -133,7 +134,20 @@ public class RealisticModel extends SimulationModel {
 		});
 		o.addElement(drawSocialGraph, 30);
 		
-		JButton socialStats = new JButton("Social Graph Details");
+		
+		
+		drawAP = new JCheckBox();
+		drawAP.setSelected(false);
+		drawAP.setText("Draw Access Points");
+		drawAP.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				onChange();
+			}
+		});
+		o.addElement(drawAP, 30);
+		
+		JButton socialStats = new JButton("Social Graph Statistics");
 		
 		o.addElement(socialStats, 30);
 		
@@ -141,6 +155,17 @@ public class RealisticModel extends SimulationModel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				displaySocialGraphStats(o);
+			}
+		});
+		
+		JButton messageStats = new JButton("Message Statistics");
+		
+		o.addElement(messageStats,30);
+		
+		messageStats.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				SpringBoardUser.displayMessageStatistics(o);
 			}
 		});
 		
@@ -240,6 +265,21 @@ public class RealisticModel extends SimulationModel {
 		}
 		for(int j=1; j<numH; ++j) {
 			g.drawLine(0, j*squareHeight, width-1, j*squareHeight);
+		}
+		
+		if (SpringBoardUser.getAccessPoints() != null && drawAP.isSelected()) {
+			for(SpringBoardUser.AccessPointNetwork.AccessPoint ap : SpringBoardUser.getAccessPoints()) {
+				g.setColor(Color.BLACK);
+				g.fillOval(ap.location.getX() - 5, 
+						ap.location.getY() - 5,
+						   2*5,
+						   2*5);
+				g.setColor(Color.BLUE);
+				g.drawOval(ap.location.getX() - ap.range,
+						   ap.location.getY() - ap.range,
+						   2*ap.range,
+						   2*ap.range);
+			}
 		}
 	}
 
