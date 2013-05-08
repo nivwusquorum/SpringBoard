@@ -8,6 +8,10 @@ import com.skjegstad.utils.BloomFilter;
 public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 	protected Random r = new Random(System.currentTimeMillis());
 	private static final int TICKS_BETWEEN_WIPES = RealisticModel.SIMULATION_DAY;
+	private static final int BLOOM_FILTER_N = 1000000;
+	private static final double BLOOM_FILTER_C = 0.001;
+	private static final int INVPROBABILITY_TRANSMIT_BLOOM = 10;
+	private static final int INVPROBABILITY_NOBLOOM = 2;
 
 	public BloomFilterMessageExchange() {
 		messagesSeenBy = new HashMap<Integer, BloomFilter<Integer>>();
@@ -44,11 +48,10 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 
 	protected boolean checkIfSeenAndSet(User target, Integer msg) {
 		if (messagesSeenBy.get(target.getID()) == null) {
-			double c = 0.01;
-			int totalMessages = 1000;
+
 			messagesSeenBy.put(target.getID(),
-					new BloomFilter<Integer>(c, totalMessages,
-							(int)(c*Math.log(2))));
+					new BloomFilter<Integer>(BLOOM_FILTER_C, BLOOM_FILTER_N,
+							(int)(BLOOM_FILTER_C*Math.log(2))));
 		}
 		BloomFilter<Integer> bf = messagesSeenBy.get(target.getID());
 		if (bf.contains(msg)) {
@@ -57,6 +60,14 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 			bf.add(msg);
 			return false;
 		}
+	}
+	
+	protected boolean shouldDeliverMessage(int msg,
+										   SpringBoardUser from,
+										   SpringBoardUser to) {
+		int invProbability =
+				checkIfSeenAndSet(to, msg) ? INVPROBABILITY_TRANSMIT_BLOOM : INVPROBABILITY_NOBLOOM;
+		return r.nextInt(invProbability) == 0;
 	}
 
 	protected void sendMessages(SpringBoardUser from,
@@ -68,9 +79,9 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 		for (int i=0; i<from.messages.getSize() && messagesSent < maxMessages; ++i) {
 			++messagesSent;
 			Integer msg = (Integer)from.messages.getElementAt(i);
-			int invProbability =
-					checkIfSeenAndSet(to, msg) ? 100 : 2;
-			if (r.nextInt(invProbability) == 0) 
+			assert msg != null;
+
+			if (shouldDeliverMessage(msg, from, to)) 
 				to.messages.addMessage(msg, areFriends);
 		}
 	}

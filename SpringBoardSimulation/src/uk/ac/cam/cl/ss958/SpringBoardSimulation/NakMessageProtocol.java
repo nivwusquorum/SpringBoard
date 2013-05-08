@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class NakMessageProtocol extends BloomFilterMessageExchange{
 	private static final int REMS_CAPACITY = 500;
-	private static final boolean CHECK_THEORETICAL_UPPER_BOUND = true;
+	private static final boolean CHECK_THEORETICAL_UPPER_BOUND = false;
 
 	private class CircularBuffer {
 		Integer [] buffer;
@@ -53,17 +53,6 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 			s.put(buffer[xPos], xPos);
 		}
 	}
-
-	@Override
-	public boolean exchange(SpringBoardUser from,
-			SpringBoardUser to,
-			int maxMessages) {
-
-		sendMessages(from, to, maxMessages);
-		sendMessages(to,from, maxMessages);
-		return true;
-
-	}
 	
 	private Map<Integer, CircularBuffer> REMs;
 	
@@ -86,7 +75,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 		addRem(to, mId);
 	}
 	
-	private boolean shouldRejectMessage(Integer msg, SpringBoardUser accordingTo) {
+	private boolean isMessageInREMs(Integer msg, SpringBoardUser accordingTo) {
 		if (CHECK_THEORETICAL_UPPER_BOUND) {
 			return SpringBoardUser.wasMessagesDelivered(msg);
 		} else {
@@ -100,25 +89,21 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 		}
 	}
 	
+	@Override
+	protected boolean shouldDeliverMessage(int msg, SpringBoardUser from,
+			SpringBoardUser to) {
+		if (isMessageInREMs(msg, to)) {
+			return false;
+		} else {
+			return super.shouldDeliverMessage(msg, from, to);
+		}
+			
+	}
+	
 	protected void sendMessages(SpringBoardUser from,
 			SpringBoardUser to,
 			int maxMessages) {
-		checkWipe(from);
-		boolean areFriends = to.getFriends().contains(from);
-		int messagesSent = 0;
-		for (int i=0; i<from.messages.getSize() && messagesSent < maxMessages; ++i) {
-			++messagesSent;
-			Integer msg = (Integer)from.messages.getElementAt(i);
-			assert msg != null;
-			if (shouldRejectMessage(msg, to) || shouldRejectMessage(msg, from)) {
-				continue;
-			}
-			int invProbability =
-					checkIfSeenAndSet(to, msg) ? 100 : 2;
-			if (r.nextInt(invProbability) == 0) 
-				to.messages.addMessage(msg, areFriends);
-		}
-		
+		super.sendMessages(from, to, maxMessages);
 		
 		// exchange rems
 		CircularBuffer cb = REMs.get(from.getID());
