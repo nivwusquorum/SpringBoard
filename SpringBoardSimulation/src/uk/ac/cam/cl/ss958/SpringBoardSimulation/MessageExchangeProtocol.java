@@ -6,4 +6,6 @@ public interface MessageExchangeProtocol {
 						 int maxMessages);
 	
 	public void messageDelivered(Integer mId, SpringBoardUser to);
+
+	public void messageCreated(Integer mId, SpringBoardUser to);
 }

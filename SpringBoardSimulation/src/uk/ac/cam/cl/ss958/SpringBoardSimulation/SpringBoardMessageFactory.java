@@ -72,6 +72,7 @@ public class SpringBoardMessageFactory {
 
 	public Integer getMessage(SpringBoardUser from, SpringBoardUser to) {
 		messages.put(noOfMessages, new Message(from, to));
+		onMessageCreated(noOfMessages, to);
 		return noOfMessages++;
 	}
 
@@ -111,6 +112,7 @@ public class SpringBoardMessageFactory {
 	
 	public void onMessageDelivered(Integer mId, SpringBoardUser to) { }
 	
+	public void onMessageCreated(Integer mId, SpringBoardUser to) { }
 	
 	public boolean wasMessageDelivered(Integer x) {
 		return messages.get(x) == null;
@@ -120,7 +122,7 @@ public class SpringBoardMessageFactory {
 	public void display(JPanel parent) {
 		new DisplayProperties(null, "Social graph properties");
 	}
-
+	
 	public class DisplayProperties extends JDialog {
 
 		private void addBorder(JComponent component, String title) {

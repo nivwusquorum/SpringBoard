@@ -1,12 +1,14 @@
 package uk.ac.cam.cl.ss958.SpringBoardSimulation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class NakMessageProtocol extends BloomFilterMessageExchange{
-	private static final int REMS_CAPACITY = 500;
+	private static final int REMS_CAPACITY = 1000;
 	private static final boolean CHECK_THEORETICAL_UPPER_BOUND = false;
 
 	private class CircularBuffer {
@@ -55,10 +57,12 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 	}
 	
 	private Map<Integer, CircularBuffer> REMs;
+	private Map<Integer, Set<Integer>> messagesDeliveredTo;
 	
 	public NakMessageProtocol() {
 		super();
 		REMs = new HashMap<Integer, CircularBuffer>();
+		messagesDeliveredTo = new HashMap<Integer, Set<Integer>>();
 	}
 	
 	private void addRem(SpringBoardUser x, int mId) {
@@ -73,6 +77,11 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 	public void messageDelivered(Integer mId, SpringBoardUser to) {
 		super.messageDelivered(mId, to);
 		addRem(to, mId);
+		Set<Integer> messagesTo = messagesDeliveredTo.get(to.getID());
+		if (messagesTo == null) {
+			messagesDeliveredTo.put(to.getID(), messagesTo = new HashSet<Integer>());
+		}
+		messagesTo.add(mId);
 	}
 	
 	private boolean isMessageInREMs(Integer msg, SpringBoardUser accordingTo) {
@@ -90,14 +99,19 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 	}
 	
 	@Override
-	protected boolean shouldDeliverMessage(int msg, SpringBoardUser from,
+	protected int getInvProbabilityOfDelivery(int msg, SpringBoardUser from,
 			SpringBoardUser to) {
 		if (isMessageInREMs(msg, to)) {
-			return false;
+			return 0;
 		} else {
-			return super.shouldDeliverMessage(msg, from, to);
+			Set<Integer> myMessages = messagesDeliveredTo.get(to.getID());
+			if (myMessages != null && myMessages.contains(msg)) {
+				addRem(to,msg);
+				return 0;
+			} else {
+				return super.getInvProbabilityOfDelivery(msg, from, to);
+			}
 		}
-			
 	}
 	
 	protected void sendMessages(SpringBoardUser from,

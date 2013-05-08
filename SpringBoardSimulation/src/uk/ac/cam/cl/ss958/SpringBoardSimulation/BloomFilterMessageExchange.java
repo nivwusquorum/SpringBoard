@@ -62,11 +62,17 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 		}
 	}
 	
+	protected int getInvProbabilityOfDelivery(int msg,
+											   SpringBoardUser from,
+										       SpringBoardUser to) {
+		return checkIfSeenAndSet(to, msg) ? INVPROBABILITY_TRANSMIT_BLOOM : INVPROBABILITY_NOBLOOM;
+	}
+	
 	protected boolean shouldDeliverMessage(int msg,
 										   SpringBoardUser from,
 										   SpringBoardUser to) {
-		int invProbability =
-				checkIfSeenAndSet(to, msg) ? INVPROBABILITY_TRANSMIT_BLOOM : INVPROBABILITY_NOBLOOM;
+		int invProbability = getInvProbabilityOfDelivery(msg, from, to);
+		if (invProbability == 0) return false;
 		return r.nextInt(invProbability) == 0;
 	}
 
@@ -92,6 +98,10 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 	@Override
 	public void messageDelivered(Integer mId, SpringBoardUser to) {
 
+	}
+
+	@Override
+	public void messageCreated(Integer mId, SpringBoardUser to) {
 	}
 
 }

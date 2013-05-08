@@ -46,7 +46,8 @@ public class SpringBoardUser extends SocialUser {
 	public static final int BLUETOOTH_MESSAGES_PER_TICK = 60;
 	public static final MessageExchangeProtocol EXCHANGE = // new BloomFilterMessageExchange();
 														   // new NaiveMessageExchange();
-														   new NakMessageProtocol();
+														   // new NakMessageProtocol();
+														   new LocationBasedMessageExchange();
 															
 	static Integer trackedMessageNumber;
 		
@@ -450,8 +451,12 @@ public class SpringBoardUser extends SocialUser {
 	private WifiCard userWifi;
 	private BluetoothCard userBluetooth;
 	public MessageSystem messages = new MessageSystem();
-	private RealisticModel model;
+	private static RealisticModel model;
 	
+	public static Dimension getModelDims() {
+		if (model == null ) return null;
+		else return new Dimension(model.getWidth(), model.getHeight());
+	}
 	
 	public SpringBoardUser(RealisticModel mainModel)
 			throws CannotPlaceUserException {
@@ -464,6 +469,10 @@ public class SpringBoardUser extends SocialUser {
 			mf = new SpringBoardMessageFactory(mainModel) {
 				public void onMessageDelivered(Integer mId, SpringBoardUser to) {
 					EXCHANGE.messageDelivered(mId, to);
+				}
+				@Override
+				public void onMessageCreated(Integer mId, SpringBoardUser to) {
+					EXCHANGE.messageCreated(mId, to);
 				}
 			};
 		}
@@ -492,7 +501,9 @@ public class SpringBoardUser extends SocialUser {
 		// Hit this if with probability msg_per_day/steps_in_day. So that it gives
 		// expected numer of messges per day as expected.
 		if (generator.nextInt(model.SIMULATION_DAY) <= messagesPerDayTarget) {
-			messages.addMessage(mf.getMessage(this, generateMessageTarget()), true);
+			Integer msg = mf.getMessage(this, generateMessageTarget());
+			messages.addMessage(msg, true);
+			messages.addMessage(msg, false);
 		}
 	}
 	

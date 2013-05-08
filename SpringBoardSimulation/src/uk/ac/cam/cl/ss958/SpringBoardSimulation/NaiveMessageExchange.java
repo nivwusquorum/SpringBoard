@@ -36,4 +36,11 @@ public class NaiveMessageExchange implements MessageExchangeProtocol {
 	public void messageDelivered(Integer mId, SpringBoardUser to) {
 	}
 
+
+
+	@Override
+	public void messageCreated(Integer mId, SpringBoardUser to) {
+		// TODO Auto-generated method stub
+	}
+
 }
