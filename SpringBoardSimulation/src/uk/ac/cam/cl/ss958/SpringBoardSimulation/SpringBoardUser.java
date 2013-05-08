@@ -44,9 +44,10 @@ public class SpringBoardUser extends SocialUser {
 	public static final int WIFI_MESSAGES_PER_TICK = 7000;
 	public static final int BLUETOOTH_QUERY_FREQUENCY = 100;
 	public static final int BLUETOOTH_MESSAGES_PER_TICK = 60;
-	public static final MessageExchangeProtocol EXCHANGE = new BloomFilterMessageExchange();
+	public static final MessageExchangeProtocol EXCHANGE = // new BloomFilterMessageExchange();
 														   // new NaiveMessageExchange();
-	
+														   new NakMessageProtocol();
+															
 	static Integer trackedMessageNumber;
 		
 	private static final Map<Integer, SpringBoardUser> users;
@@ -131,6 +132,14 @@ public class SpringBoardUser extends SocialUser {
 			return null;
 	}
 	
+	public static boolean wasMessagesDelivered(Integer x) {
+		if (mf != null) {
+			return mf.wasMessageDelivered(x);
+		} else {
+			return false;
+		}
+	}
+	
 	public static void displayMessageStatistics(JPanel parent) {
 		if (mf != null)
 			mf.display(parent);
@@ -170,7 +179,8 @@ public class SpringBoardUser extends SocialUser {
 			if (!messagesSet.contains(msg)) {
 				if (messages[nextSlot] != null) {
 					messagesSet.remove(messages[nextSlot]);
-					mf.deleteMessage(msg);
+					mf.deleteMessage(messages[nextSlot]);
+					messages[nextSlot] = null;
 				}
 				messages[nextSlot] = msg;
 				messagesSet.add(msg);

@@ -7,40 +7,64 @@ import java.util.Set;
 
 public class NakMessageProtocol extends BloomFilterMessageExchange{
 	private static final int REMS_CAPACITY = 500;
+	private static final boolean CHECK_THEORETICAL_UPPER_BOUND = true;
 
 	private class CircularBuffer {
 		Integer [] buffer;
-		int last;
+		int next;
 		public final int capacity;
-		Set<Integer> s;
+		Map<Integer, Integer> s;
 		public CircularBuffer(int capacity) {
 			buffer = new Integer[capacity];
-			last = 0;
+			next = 0;
 			this.capacity=capacity;
-			s = new HashSet<Integer>();
+			s = new HashMap<Integer, Integer>();
 		}
 		public void add(int x) {
-			if (s.contains(x))
+			if (s.get(x) != null)
 				return;
-			if(buffer[last] != null) {
-				s.remove(buffer[last]);
+			if(buffer[next] != null) {
+				s.remove(buffer[next]);
 			}
-			buffer[last++] = x;
-			s.add(x);
-			if (last == capacity) last = 0;
+			s.put(x, next);
+			buffer[next++] = x;
+			if (next == capacity) next = 0;
 		}
 		
 		public Integer get(int w) {
-			w=-w;
+			w=next-1-w;
 			while (w < 0) w+=capacity;
 			return buffer[w];
 		}
 		
 		public boolean contains(Integer x) {
-			return s.contains(x);
+			return s.get(x) != null;
+		}
+		
+		public void bumpUp(Integer x) {
+			Integer xPos = s.get(x);
+			assert xPos != null;
+			int last = next-1;
+			if (last < 0) last+=capacity;
+			int temp = buffer[last];
+			buffer[last] = buffer[xPos];
+			buffer[xPos] = temp;
+			s.put(buffer[last], last);
+			s.put(buffer[xPos], xPos);
 		}
 	}
 
+	@Override
+	public boolean exchange(SpringBoardUser from,
+			SpringBoardUser to,
+			int maxMessages) {
+
+		sendMessages(from, to, maxMessages);
+		sendMessages(to,from, maxMessages);
+		return true;
+
+	}
+	
 	private Map<Integer, CircularBuffer> REMs;
 	
 	public NakMessageProtocol() {
@@ -51,7 +75,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 	private void addRem(SpringBoardUser x, int mId) {
 		CircularBuffer cb = REMs.get(x.getID());
 		if (cb == null) {
-			REMs.put(x.getID(), new CircularBuffer(REMS_CAPACITY)); 
+			REMs.put(x.getID(), cb = new CircularBuffer(REMS_CAPACITY)); 
 		}
 		cb.add(mId);
 	}
@@ -63,12 +87,19 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 	}
 	
 	private boolean shouldRejectMessage(Integer msg, SpringBoardUser accordingTo) {
-		CircularBuffer cb = REMs.get(accordingTo.getID());
-		return cb != null && cb.contains(msg);
+		if (CHECK_THEORETICAL_UPPER_BOUND) {
+			return SpringBoardUser.wasMessagesDelivered(msg);
+		} else {
+			CircularBuffer cb = REMs.get(accordingTo.getID());
+			
+			boolean ret = (cb != null && cb.contains(msg));
+			if (ret) {
+				cb.bumpUp(msg);
+			}
+			return ret;
+		}
 	}
-
-
-
+	
 	protected void sendMessages(SpringBoardUser from,
 			SpringBoardUser to,
 			int maxMessages) {
@@ -78,7 +109,8 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 		for (int i=0; i<from.messages.getSize() && messagesSent < maxMessages; ++i) {
 			++messagesSent;
 			Integer msg = (Integer)from.messages.getElementAt(i);
-			if (shouldRejectMessage(msg, to)) {
+			assert msg != null;
+			if (shouldRejectMessage(msg, to) || shouldRejectMessage(msg, from)) {
 				continue;
 			}
 			int invProbability =
@@ -95,7 +127,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 		for (int i=0; i<Math.min(cb.capacity, 2*maxMessages); ++i) {
 			Integer rem = cb.get(i);
 			if (rem == null) break;
-			if (to.messages.contains(rem) || r.nextInt(200) == 0) {
+			if (to.messages.contains(rem) || r.nextInt(100) == 0) {
 				addRem(to, rem);
 			}
 		}

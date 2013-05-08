@@ -54,7 +54,7 @@ public class SpringBoardMessageFactory {
 			toFriend = from.getFriends().contains(to);
 			time = model.getStepsExecuted();
 			wasDelivered = false;
-			noOfCopies = 1;
+			noOfCopies = 0;
 		}
 	}
 
@@ -112,7 +112,9 @@ public class SpringBoardMessageFactory {
 	public void onMessageDelivered(Integer mId, SpringBoardUser to) { }
 	
 	
-	
+	public boolean wasMessageDelivered(Integer x) {
+		return messages.get(x) == null;
+	}
 	
 	
 	public void display(JPanel parent) {
