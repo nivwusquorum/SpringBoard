@@ -86,6 +86,7 @@ public class SpringBoardMessageFactory {
 				m.time = model.getStepsExecuted() - m.time;
 				processedMessages.add(m);
 				messages.remove(mId);
+				onMessageDelivered(mId, to);
 			}
 		}
 		// if m == null then messages was probably just delivered
@@ -107,6 +108,13 @@ public class SpringBoardMessageFactory {
 		// if m == null then messages was probably just delivered
 	}
 
+	
+	public void onMessageDelivered(Integer mId, SpringBoardUser to) { }
+	
+	
+	
+	
+	
 	public void display(JPanel parent) {
 		new DisplayProperties(null, "Social graph properties");
 	}

@@ -4,4 +4,6 @@ public interface MessageExchangeProtocol {
 	public boolean exchange(SpringBoardUser from,
 						 SpringBoardUser to,
 						 int maxMessages);
+	
+	public void messageDelivered(Integer mId, SpringBoardUser to);
 }

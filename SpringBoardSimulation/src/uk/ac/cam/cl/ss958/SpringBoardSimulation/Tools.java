@@ -16,4 +16,5 @@ public class Tools {
 		return dx*dx + dy*dy;
 	}
 
+	
 }

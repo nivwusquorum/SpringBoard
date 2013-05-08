@@ -30,4 +30,10 @@ public class NaiveMessageExchange implements MessageExchangeProtocol {
 		}
 	}
 
+
+
+	@Override
+	public void messageDelivered(Integer mId, SpringBoardUser to) {
+	}
+
 }

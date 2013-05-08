@@ -451,7 +451,11 @@ public class SpringBoardUser extends SocialUser {
 			wifi = new AccessPointNetwork(mainModel);
 		}
 		if (mf == null) {
-			mf = new SpringBoardMessageFactory(mainModel);
+			mf = new SpringBoardMessageFactory(mainModel) {
+				public void onMessageDelivered(Integer mId, SpringBoardUser to) {
+					EXCHANGE.messageDelivered(mId, to);
+				}
+			};
 		}
 		userWifi = new WifiCard();
 		userBluetooth = new BluetoothCard();
