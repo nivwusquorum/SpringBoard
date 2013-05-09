@@ -7,125 +7,68 @@ import java.util.Map;
 import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
 
 public class LocationBasedMessageExchange extends NakMessageProtocol {
-	private static final double FORGETTING = 0.01;
-	private static final double LOCATION_RATIO = 0.8;
-	
-	class DPoint {
-		double x;
-		double y;
-		DPoint(double x,
-			   double y) {
-			this.x = x;
-			this.y = y;
-		}
+	private static final double DIFFUSE_DISTANCE = 50;
+
+	private Point diffuse(Point p) {
+		double angle = Math.toRadians(Math.random() * 360);
+		int dx = (int)(DIFFUSE_DISTANCE * Math.cos(angle));
+		int dy = (int)(DIFFUSE_DISTANCE * Math.sin(angle));
+		return new Point(p.getX() + dx, p.getY() + dy);
 	}
 	
-	private DPoint multiply(DPoint p, double d) {
-		return new DPoint(p.x*d, p.y*d);
-	}
-	
-	private DPoint add(DPoint a, DPoint b) {
-		return new DPoint(a.x + b.x, a.y + b.y);
-	}
-	
-	class LocationFactor {
-		DPoint myAvgLocation;
-		// average location factor of people I contact.
-		DPoint averageLFOthers;
-		public LocationFactor() {
-			myAvgLocation = new DPoint(0.0,0.0);
-			averageLFOthers = new DPoint(0.0,0.0);
-		}
-		
-		long lastLocationUpdate = 0;
-		
-		public void updateMyLocation(Point location) {
-			if (lastLocationUpdate == RealisticModel.getStepsExecuted()) 
-				return;
-			lastLocationUpdate = RealisticModel.getStepsExecuted();
-			myAvgLocation.x = myAvgLocation.x*(1.0-FORGETTING) + FORGETTING*location.getX();
-			myAvgLocation.y = myAvgLocation.y*(1.0-FORGETTING) + FORGETTING*location.getY();
-		}
-		
-		public void updateLFOthers(DPoint lf) {
-			averageLFOthers.x = averageLFOthers.x*(1.0-FORGETTING) + FORGETTING*lf.x;
-			averageLFOthers.y = averageLFOthers.y*(1.0-FORGETTING) + FORGETTING*lf.y;
-		}
-		
-		public DPoint getFactor() {
-			return add(multiply(myAvgLocation, LOCATION_RATIO),
-					   multiply(averageLFOthers, (1.0-LOCATION_RATIO)));
-		}
-	}
-	
-	Map<Integer, LocationFactor> userLf;
-	Map<Integer, DPoint> messageLf;
+	Map<Integer, Point> messageLocation;
 	
 	
 	public LocationBasedMessageExchange() {
-		userLf = new HashMap<Integer, LocationFactor>();
-		messageLf = new HashMap<Integer, DPoint>();
+		super();
+		messageLocation = new HashMap<Integer, Point>();
 	}
 	
-	private void updateLf(SpringBoardUser a, SpringBoardUser b) {
-		LocationFactor lfa = userLf.get(a.getID());
-		if(lfa == null){
-			userLf.put(a.getID(), lfa = new LocationFactor());
-		}
-		
-		LocationFactor lfb = userLf.get(b.getID());
-		if(lfb == null){
-			userLf.put(b.getID(), lfb = new LocationFactor());
-		}
-		lfa.updateMyLocation(a.getLocation());
-		lfb.updateMyLocation(b.getLocation());
-		lfa.updateLFOthers(lfb.getFactor());
-		lfb.updateLFOthers(lfa.getFactor());
-	}
-	
-	private double getInvProbabilityOfFactorDeliveryHeuristic(DPoint a, DPoint b) {
-		Dimension m = SpringBoardUser.getModelDims();
-		if (m == null) return 1.0;
-		else {
-			double dx = Math.abs(a.x-b.x);
-			double dy = Math.abs(a.y-b.y);
-			return (dx+dy)/(m.getWidth() + m.getHeight());
-		}
-	}
+	private Double maxDistance = null;
 	
 	@Override
-	protected int getInvProbabilityOfDelivery(int msg, SpringBoardUser from,
+	protected double getProbabilityOfDelivery(int msg, SpringBoardUser from,
 			SpringBoardUser to) {
-		DPoint lf = messageLf.get(msg);
-		LocationFactor toLfGen = userLf.get(to.getID());
-		if (lf == null || toLfGen == null) {
-			return super.getInvProbabilityOfDelivery(msg, from, to);			
-		} else {
-			DPoint toLf = toLfGen.getFactor();
-			int sofar = super.getInvProbabilityOfDelivery(msg, from, to);	
-			if(sofar == 0) 
-				return 0;
-			double f = getInvProbabilityOfFactorDeliveryHeuristic(lf, toLf);
-			// 1/f because we are computing inverse probability. 
-			// 0.1 because E(f) = 0.1 so E(1/f) = 10.0.
-			return Math.max(1, (int)(0.1*sofar/f));
+		double prev = super.getProbabilityOfDelivery(msg, from, to);
+		boolean DEBUG = false; 
+						//r.nextInt(1000) == 0;
+		if(DEBUG && prev == 0.0)
+			System.out.println("prev(0)");
+
+		if (prev == 0.0) return 0.0;
+		assert prev > 0.0;
+		if (maxDistance == null) {
+			Dimension m = SpringBoardUser.getModelDims();
+			if (m == null) return prev;
+			else {
+				double dx2 = m.getWidth()*m.getWidth();
+				double dy2 = m.getHeight()*m.getHeight();
+				// add 1 to avoid division by 0 error.
+				maxDistance = Math.sqrt(dx2+dy2)+1;
+			}
 		}
-	}
-	
-	@Override
-	protected void sendMessages(SpringBoardUser from, SpringBoardUser to,
-			int maxMessages) {
-		// TODO Auto-generated method stub
-		super.sendMessages(from, to, maxMessages);
-		updateLf(from, to);
+		Point a = to.getLocation();
+		Point b = messageLocation.get(msg);
+		assert b != null;
+		double curDistance = Math.sqrt(Tools.pointsDistanceSquared(a,b));
+		curDistance = Math.max(0, curDistance-DIFFUSE_DISTANCE);
+			
+		// System.out.println("cur: " + curDistance + ", max: " + maxDistance);
+		double locationBasedProbability = (maxDistance-curDistance)/maxDistance;
+		// 0.9*(1-(1-x)^2)+0.1
+		locationBasedProbability = 0.9*(1.0-Math.pow(1-locationBasedProbability, 1.2))+0.1;
+		// expected value of location based probability is about 0.1
+		double ret = prev*locationBasedProbability;
+		if (DEBUG)
+			System.out.println("prev(" + prev + ") -> prob(" + ret+") when dist= " +curDistance);
+		return ret;
 		
 	}
 	
-	public void onMessageCreated(Integer mId, SpringBoardUser to) {
-		LocationFactor lf = userLf.get(to.getID());
-		if (lf != null) {
-			messageLf.put(mId, lf.getFactor());
-		}
+
+	@Override
+	public void messageCreated(Integer mId, SpringBoardUser to) {
+		messageLocation.put(mId, diffuse(to.getLocation()));
 	}
 	
 	

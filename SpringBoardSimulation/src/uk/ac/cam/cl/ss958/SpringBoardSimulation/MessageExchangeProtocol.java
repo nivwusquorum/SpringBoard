@@ -8,4 +8,6 @@ public interface MessageExchangeProtocol {
 	public void messageDelivered(Integer mId, SpringBoardUser to);
 
 	public void messageCreated(Integer mId, SpringBoardUser to);
+	
+	public void step();
 }

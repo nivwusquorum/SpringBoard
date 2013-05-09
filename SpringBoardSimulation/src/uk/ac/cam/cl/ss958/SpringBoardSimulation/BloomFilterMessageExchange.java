@@ -9,16 +9,18 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 	protected Random r = new Random(System.currentTimeMillis());
 	private static final int TICKS_BETWEEN_WIPES = RealisticModel.SIMULATION_DAY;
 	private static final int BLOOM_FILTER_N = 1000000;
-	private static final double BLOOM_FILTER_C = 0.001;
-	private static final int INVPROBABILITY_TRANSMIT_BLOOM = 10;
-	private static final int INVPROBABILITY_NOBLOOM = 2;
+	private static final double BLOOM_FILTER_C = 0.05;
+	private static final double PROBABILITY_TRANSMIT_BLOOM = 0.5;
+	private static final double PROBABILITY_NOBLOOM = 1.0;
+	private static final int BLOOM_HASHES = 34;
 
 	public BloomFilterMessageExchange() {
-		messagesSeenBy = new HashMap<Integer, BloomFilter<Integer>>();
+		super();
+		messagesSeenBy = new HashMap<Integer, FastBloomFilter>();
 		nextWipe = new HashMap<Integer, Long>();
 	}
 
-	Map<Integer, BloomFilter<Integer>> messagesSeenBy;
+	Map<Integer, FastBloomFilter> messagesSeenBy;
 	Map<Integer, Long> nextWipe;
 	@Override
 	public boolean exchange(SpringBoardUser from,
@@ -39,7 +41,7 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 			return;
 		}
 		if (RealisticModel.getStepsExecuted() >=nextWipeX) {
-			BloomFilter<Integer> bf = messagesSeenBy.get(x.getID());
+			FastBloomFilter bf = messagesSeenBy.get(x.getID());
 			if (bf != null) bf.clear();
 			nextWipe.put(x.getID(), RealisticModel.getStepsExecuted() +
 					r.nextInt(2*TICKS_BETWEEN_WIPES));
@@ -47,14 +49,13 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 	}
 
 	protected boolean checkIfSeenAndSet(User target, Integer msg) {
-		if (messagesSeenBy.get(target.getID()) == null) {
-
+		FastBloomFilter bf = messagesSeenBy.get(target.getID());
+		if (bf == null) {
 			messagesSeenBy.put(target.getID(),
-					new BloomFilter<Integer>(BLOOM_FILTER_C, BLOOM_FILTER_N,
-							(int)(BLOOM_FILTER_C*Math.log(2))));
+					bf = new FastBloomFilter((int)(BLOOM_FILTER_C*BLOOM_FILTER_N),
+							BLOOM_HASHES));
 		}
-		BloomFilter<Integer> bf = messagesSeenBy.get(target.getID());
-		if (bf.contains(msg)) {
+		if (bf.mightContain(msg)) {
 			return true;
 		} else {
 			bf.add(msg);
@@ -62,18 +63,38 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 		}
 	}
 	
-	protected int getInvProbabilityOfDelivery(int msg,
+	protected double getProbabilityOfDelivery(int msg,
 											   SpringBoardUser from,
 										       SpringBoardUser to) {
-		return checkIfSeenAndSet(to, msg) ? INVPROBABILITY_TRANSMIT_BLOOM : INVPROBABILITY_NOBLOOM;
+		return checkIfSeenAndSet(to, msg) ? PROBABILITY_TRANSMIT_BLOOM : PROBABILITY_NOBLOOM;
+	}
+	
+	protected boolean trueWithProbability(double p) {
+		return r.nextDouble()<p;
 	}
 	
 	protected boolean shouldDeliverMessage(int msg,
 										   SpringBoardUser from,
 										   SpringBoardUser to) {
-		int invProbability = getInvProbabilityOfDelivery(msg, from, to);
-		if (invProbability == 0) return false;
-		return r.nextInt(invProbability) == 0;
+
+		double probability = getProbabilityOfDelivery(msg, from, to);
+		boolean DEBUG = true;
+		if(DEBUG && r.nextInt(10000) == 0) 
+			System.out.println("probability of delivery" + probability);
+		// Check if message target is TO. If it is always accept.
+		// This needs to be able to be done after computing hypothetical result,
+		// as the algorithms underneath rely on getProbabilityOfDelivery being
+		// called regardless of the target.
+		if (SpringBoardUser.mf != null) {
+			SpringBoardUser target = SpringBoardUser.mf.getTarget(msg);
+			if(target != null && target.getID() == to.getID()) {
+				return true;
+			} else {
+				return trueWithProbability(probability);
+			}
+		} else  {
+			return trueWithProbability(probability);
+		}
 	}
 
 	protected void sendMessages(SpringBoardUser from,
@@ -104,4 +125,6 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 	public void messageCreated(Integer mId, SpringBoardUser to) {
 	}
 
+	@Override
+	public void step() {}
 }

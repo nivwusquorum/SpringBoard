@@ -64,6 +64,7 @@ public class SpringBoardMessageFactory {
 		messages = new HashMap<Integer, Message>();
 		processedMessages = new ArrayList<Message>();
 		model = m;
+		noOfMessages = 0;
 	}
 
 	int noOfMessages;
@@ -78,6 +79,7 @@ public class SpringBoardMessageFactory {
 
 	// code is still responsible to put this messages id in the to's list.
 	public synchronized void deliverMessage(Integer mId, SpringBoardUser to) {
+
 		assert mId < noOfMessages;
 		Message m = messages.get(mId);
 		if (m != null) {
@@ -94,6 +96,7 @@ public class SpringBoardMessageFactory {
 	}
 
 	public synchronized void deleteMessage(Integer mId) {
+
 		assert mId < noOfMessages;
 		Message m = messages.get(mId);
 		if(m != null) {
@@ -116,6 +119,11 @@ public class SpringBoardMessageFactory {
 	
 	public boolean wasMessageDelivered(Integer x) {
 		return messages.get(x) == null;
+	}
+	
+	public SpringBoardUser getTarget(int msg) {
+		Message m = messages.get(msg);
+		return m==null ? null : m.to;
 	}
 	
 	
@@ -178,7 +186,8 @@ public class SpringBoardMessageFactory {
 			// put the PlotPanel in a JFrame, as a JPanel
 			JPanel ret = new JPanel();
 			ret.setLayout(new FlowLayout());
-			ret.add(plot, BorderLayout.CENTER);
+			ret.add(		System.out.println("get " + msg);
+plot, BorderLayout.CENTER);
 			//ret.setPreferredSize(new Dimension(300,300));
 			return ret;
 		}

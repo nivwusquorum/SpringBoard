@@ -43,4 +43,6 @@ public class NaiveMessageExchange implements MessageExchangeProtocol {
 		// TODO Auto-generated method stub
 	}
 
+	@Override
+	public void step() {}
 }

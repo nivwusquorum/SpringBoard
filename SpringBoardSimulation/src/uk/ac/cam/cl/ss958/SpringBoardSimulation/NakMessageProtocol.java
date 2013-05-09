@@ -99,21 +99,25 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 	}
 	
 	@Override
-	protected int getInvProbabilityOfDelivery(int msg, SpringBoardUser from,
+	protected double getProbabilityOfDelivery(int msg, SpringBoardUser from,
 			SpringBoardUser to) {
 		if (isMessageInREMs(msg, to)) {
-			return 0;
+			// have REM for it, ignore it and bump up REM.
+			return 0.0;
 		} else {
 			Set<Integer> myMessages = messagesDeliveredTo.get(to.getID());
 			if (myMessages != null && myMessages.contains(msg)) {
+				// if I don't have rem, but it was delivered to me, emit another rem.
 				addRem(to,msg);
-				return 0;
+				return 0.0;
 			} else {
-				return super.getInvProbabilityOfDelivery(msg, from, to);
+				// return what I got from bloom filter.
+				return super.getProbabilityOfDelivery(msg, from, to);
 			}
 		}
 	}
 	
+	@Override
 	protected void sendMessages(SpringBoardUser from,
 			SpringBoardUser to,
 			int maxMessages) {
@@ -126,7 +130,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 		for (int i=0; i<Math.min(cb.capacity, 2*maxMessages); ++i) {
 			Integer rem = cb.get(i);
 			if (rem == null) break;
-			if (to.messages.contains(rem) || r.nextInt(100) == 0) {
+			if (to.messages.contains(rem) || r.nextInt(10) == 0) {
 				addRem(to, rem);
 			}
 		}

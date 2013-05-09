@@ -64,6 +64,12 @@ public class RealisticModel extends SimulationModel {
 
 	Community [] communities;
 
+	public static RealisticModel me;
+	
+	public static RealisticModel getLatestInstance() {
+		return me;
+	}
+	
 	public RealisticModel(int width, int height, int squareWidth, int squareHeight) throws Exception {
 		super(width, height);
 		assert SIMULATION_MORNING + SIMULATION_EVENING == SIMULATION_DAY;
@@ -86,7 +92,8 @@ public class RealisticModel extends SimulationModel {
 		}
 
 		System.out.println("Total number of users placed: " + User.getNumerOfUsers());
-
+		
+		me = this;
 		running = new AtomicBoolean(false);
 
 	}
@@ -100,18 +107,34 @@ public class RealisticModel extends SimulationModel {
 	private JCheckBox showRanges;
 	
 	private JLabel trackedMessage;
+	private Integer trackedMessageNumber;
 	private JButton disableTracking;
 	
+	SpringBoardUser trackedMessageTarget;
+	
 	public void setTrackedMessage(Integer tMsg) {
+		
+		trackedMessageNumber = tMsg;
 		if (tMsg == null) {
+			trackedMessageTarget = null;
 			trackedMessage.setText("No message tracked.");
 			disableTracking.setEnabled(false);
 		} else {
-			trackedMessage.setText("Tracking message: " + tMsg);
+			String str = "Tracking message: " + tMsg;
+			if (SpringBoardUser.mf != null) {
+				str += SpringBoardUser.mf.wasMessageDelivered(tMsg) ? 
+												" (delivered)" : " (not delivered)";
+				trackedMessageTarget = SpringBoardUser.mf.getTarget(tMsg);
+			}
+			trackedMessage.setText(str);
 			disableTracking.setEnabled(true);
 		}
 		SpringBoardUser.setTrackedMessage(tMsg);
 		onChange();
+	}
+	
+	public void updateTrackedMessage() {
+		setTrackedMessage(trackedMessageNumber);
 	}
 	
 	@Override
@@ -154,6 +177,7 @@ public class RealisticModel extends SimulationModel {
 		drawAP = new JCheckBox();
 		drawAP.setSelected(false);
 		drawAP.setText("Draw Access Points");
+		
 		drawAP.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -237,9 +261,11 @@ public class RealisticModel extends SimulationModel {
 			if (getStepsExecuted()%500 == 250)
 				SpringBoardUser.checkPointMessageStats();
 			
+			SpringBoardUser.EXCHANGE.step();
+			
 			onChange();
 			running.set(false);
-
+			
 			long executionTime = System.nanoTime() - startTime;
 			double executionTimeMS = (double)executionTime/1000000.0;
 			if (averageStepExecutionTime == -1) {
@@ -342,6 +368,12 @@ public class RealisticModel extends SimulationModel {
 						2*u.bluetoothRange);
 			}
 		}
+		if (trackedMessageTarget != null) {
+			g.setColor(Color.RED);
+			Point l = trackedMessageTarget.getLocation();
+			g.fillOval(l.getX() - 7, l.getY() - 7,14,14);
+		}
+		
 		super.postpaint(g);
 	}
 	

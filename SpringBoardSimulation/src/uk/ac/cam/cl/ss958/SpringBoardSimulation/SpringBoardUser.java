@@ -47,8 +47,10 @@ public class SpringBoardUser extends SocialUser {
 	public static final MessageExchangeProtocol EXCHANGE = // new BloomFilterMessageExchange();
 														   // new NaiveMessageExchange();
 														   // new NakMessageProtocol();
-														   new LocationBasedMessageExchange();
-															
+														   // new LocationBasedMessageExchange();
+														   // new SecondLocationBasedMessageExchange();
+														   // new ThirdLocationBasedMessageExchange();
+														   new FourthLocationBasedMessageExchange();
 	static Integer trackedMessageNumber;
 		
 	private static final Map<Integer, SpringBoardUser> users;
@@ -56,7 +58,7 @@ public class SpringBoardUser extends SocialUser {
 			new Zeta(1.07, 0.0, new MersenneTwister((int)System.currentTimeMillis()));
 	
 	private static Random springboardGenerator; 
-	private static SpringBoardMessageFactory mf;
+	public static SpringBoardMessageFactory mf;
 
 	static class AccessPointNetwork {
 		public class AccessPoint {
@@ -469,6 +471,7 @@ public class SpringBoardUser extends SocialUser {
 			mf = new SpringBoardMessageFactory(mainModel) {
 				public void onMessageDelivered(Integer mId, SpringBoardUser to) {
 					EXCHANGE.messageDelivered(mId, to);
+					model.updateTrackedMessage();
 				}
 				@Override
 				public void onMessageCreated(Integer mId, SpringBoardUser to) {
