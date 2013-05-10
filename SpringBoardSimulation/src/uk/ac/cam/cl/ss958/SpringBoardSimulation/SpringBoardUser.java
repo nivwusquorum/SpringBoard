@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,13 +45,14 @@ public class SpringBoardUser extends SocialUser {
 	public static final int WIFI_MESSAGES_PER_TICK = 7000;
 	public static final int BLUETOOTH_QUERY_FREQUENCY = 100;
 	public static final int BLUETOOTH_MESSAGES_PER_TICK = 60;
-	public static final MessageExchangeProtocol EXCHANGE = // new BloomFilterMessageExchange();
+	public static final boolean USE_PRIORITY_BOX = false;
+	public static final MessageExchangeProtocol EXCHANGE = new BloomFilterMessageExchange();
 														   // new NaiveMessageExchange();
 														   // new NakMessageProtocol();
 														   // new LocationBasedMessageExchange();
 														   // new SecondLocationBasedMessageExchange();
 														   // new ThirdLocationBasedMessageExchange();
-														   new FourthLocationBasedMessageExchange();
+														   // new FourthLocationBasedMessageExchange();
 	static Integer trackedMessageNumber;
 		
 	private static final Map<Integer, SpringBoardUser> users;
@@ -164,20 +166,27 @@ public class SpringBoardUser extends SocialUser {
 	
 	private final int messagesPerDayTarget;
 	
-	private class MessageStorage {
+	private interface MessageStorage {
+		public Integer addMessage(int msg, double priority);
+		public Integer get(int index);
+		public int getSize();
+		public boolean contains(Integer x);
+	}
+	
+	private class SimpleMessageStorage implements MessageStorage {
 		private Integer [] messages;
 		private Set<Integer> messagesSet;
 		private final int capacity;
 		private int nextSlot;
 		
-		public MessageStorage(int capacity) {
+		public SimpleMessageStorage(int capacity) {
 			this.capacity= capacity;
 			messages = new Integer[capacity];
 			messagesSet = new HashSet<Integer>();
 			nextSlot = 0;
 		}
 		
-		public Integer addMessage(int msg) {
+		public Integer addMessage(int msg, double priority) {
 			Integer ret = null;
 			if (!messagesSet.contains(msg)) {
 				if (messages[nextSlot] != null) {
@@ -210,12 +219,116 @@ public class SpringBoardUser extends SocialUser {
 		}
 	}
 	
-	public class MessageSystem implements ListModel { 
-		MessageStorage msgFriends = new MessageStorage(MESSAGES_CAPACITY_FRIEND);
-		MessageStorage msgOthers = new MessageStorage(MESSAGES_CAPACITY_OTHER);
+	private class MessageSmartPriorityBox implements MessageStorage {
+		private final int SAMPLE_MESSAGES = 1000;
+		private final double [] CAPACITY_DEDICATED = {0.4, 0.3, 0.3};
+		private final double [] PRIORITY_PROPORTIONS = {0.5, 0.4, 0.1 };
 		
-		public void addMessage(int msg, boolean friend) {
-			Integer index = friend ? msgFriends.addMessage(msg) : msgOthers.addMessage(msg);
+		private double [] priorityLimitForBox;
+		MessageStorage [] storage; 
+		
+		private double [] samples;
+		int nextSampleIndex = 0;
+		
+		private void updatePriorityDistribution(double priority) {
+			samples[nextSampleIndex++] = priority;
+			if (nextSampleIndex == samples.length) {
+				nextSampleIndex = 0;
+				Arrays.sort(samples);
+				
+				double prioritySoFar = 0.0;
+				for (int i=0; i<priorityLimitForBox.length; ++i) {
+					prioritySoFar += PRIORITY_PROPORTIONS[i];
+					priorityLimitForBox[i] = samples[(int)(prioritySoFar*(samples.length-1))];
+				}
+				
+				priorityLimitForBox[priorityLimitForBox.length-1] = 1.0;
+			}
+		}
+		
+		public MessageSmartPriorityBox(int capacity) {
+			int boxes = CAPACITY_DEDICATED.length;
+			storage = new MessageStorage[boxes];
+			for (int i=0; i<boxes; ++i) {
+				storage[i] = new SimpleMessageStorage((int)(CAPACITY_DEDICATED[i]*capacity));
+			}
+			priorityLimitForBox = new double [boxes];
+			
+			
+			double sumSoFar = 0.0;
+			for (int i=0; i<boxes; ++i) {
+				sumSoFar += PRIORITY_PROPORTIONS[i];
+				priorityLimitForBox[i] = sumSoFar;
+
+			}
+			samples = new double[SAMPLE_MESSAGES];
+		}
+		
+		public Integer addMessage(int msg, double priority) {
+			updatePriorityDistribution(priority);
+			int sizeSoFar = 0;
+			for (int i=0; i<storage.length; ++i) {
+				if(priority <= priorityLimitForBox[i]) {
+					Integer indexReceived = storage[i].addMessage(msg, priority);
+					if (indexReceived == null)
+						return null;
+					else 
+						return sizeSoFar + indexReceived;
+				}
+				sizeSoFar += storage[i].getSize();
+			}
+			assert false;
+			return null;
+		}
+		
+		public int getSize() {
+			int size = 0;
+			for(int i=0; i<storage.length; ++i) {
+				size +=storage[i].getSize();
+			}
+			return size;
+		}
+
+		public Integer get(int index) {
+
+			for(int i=0; i<storage.length; ++i) {
+				if (index<storage[i].getSize()) {
+					return storage[i].get(index);
+				}
+				index -= storage[i].getSize();
+			}
+			assert false;
+			return null;
+		}
+		
+		public boolean contains(Integer x) {
+			for (int i=0; i<storage.length; ++i) {
+				if (storage[i].contains(x))
+					return true;
+			}
+			return false;
+		}
+		
+	}
+	
+	public class MessageSystem implements ListModel { 
+		MessageStorage msgFriends;
+		MessageStorage msgOthers;
+		
+		public MessageSystem() {
+			if (USE_PRIORITY_BOX) {
+				msgFriends = new MessageSmartPriorityBox(MESSAGES_CAPACITY_FRIEND);
+				msgOthers = new MessageSmartPriorityBox(MESSAGES_CAPACITY_OTHER);
+			} else {
+				msgFriends = new SimpleMessageStorage(MESSAGES_CAPACITY_FRIEND);
+				msgOthers = new SimpleMessageStorage(MESSAGES_CAPACITY_OTHER);
+			}
+		}
+		
+		
+		public void addMessage(int msg, boolean friend, double priority) {
+			Integer index = friend ? msgFriends.addMessage(msg, priority) :
+				                     msgOthers.addMessage(msg, priority);
 			if (index != null) {
 				index = friend ? index : msgFriends.getSize() + index;
 				for (ListDataListener l : listeners) {
@@ -505,8 +618,8 @@ public class SpringBoardUser extends SocialUser {
 		// expected numer of messges per day as expected.
 		if (generator.nextInt(model.SIMULATION_DAY) <= messagesPerDayTarget) {
 			Integer msg = mf.getMessage(this, generateMessageTarget());
-			messages.addMessage(msg, true);
-			messages.addMessage(msg, false);
+			messages.addMessage(msg, true, 1.0);
+			messages.addMessage(msg, false, 1.0);
 		}
 	}
 	

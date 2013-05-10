@@ -204,25 +204,40 @@ plot, BorderLayout.CENTER);
 			double averageTimeDays = 0.0;
 			int deliveredMessages = 0;
 			int sentToFriends = 0;
+			
+			int droppedToFriends = 0;
+			double droppedDistance = 0.0;
+			
 			int total = processedMessages.size();
 			for (Message m : processedMessages) {
 				averageDistance += m.startingDistance;
 				averageTimeDays += m.time;
 				if (m.toFriend) ++sentToFriends;
 				if (m.wasDelivered) ++deliveredMessages;
+				
+				if (!m.wasDelivered) {
+					if (m.toFriend) ++droppedToFriends;
+					droppedDistance += m.startingDistance;
+				}
 			}
 
 			averageDistance/=processedMessages.size();
 			averageTimeDays/=processedMessages.size()*RealisticModel.SIMULATION_DAY;
-
+			droppedDistance /= (total - deliveredMessages);
+			
 			String ans  = "Properties:\n";
 			ans += "Total messages: " + processedMessages.size() + ", in which:\n";
 			ans += "  - " + deliveredMessages + " delivered (" + (deliveredMessages*100+total/2)/total + "%)\n";
 			ans += "  - " + (total - deliveredMessages) + " not delivered (" + ((total-deliveredMessages)*100+total/2)/total + "%)\n";
+			if (total - deliveredMessages > 0) {
+				ans += "        -> " + droppedToFriends + " sent to friends (" + (100*droppedToFriends)/(total - deliveredMessages) +"%)\n";
+				ans += "        -> " + "avg distance: " + droppedDistance +"\n";
+			}
 			ans += "  - " + sentToFriends + " to friends (" + (sentToFriends*100+total/2)/total + "%)\n";
 			ans += "  - " + (total - sentToFriends) + " to others (" + ((total-sentToFriends)*100+total/2)/total + "%)\n";
 			ans += "Average time (days): " + averageTimeDays +"\n";
 			ans += "Average distance: " + averageDistance +"\n";
+			
 			JTextArea text = new JTextArea(ans);
 			text.setEditable(false);
 			ret.add(text);

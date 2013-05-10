@@ -73,12 +73,12 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 		return r.nextDouble()<p;
 	}
 	
-	protected boolean shouldDeliverMessage(int msg,
+	protected double getFinalDeliveryPriority(int msg,
 										   SpringBoardUser from,
 										   SpringBoardUser to) {
 
 		double probability = getProbabilityOfDelivery(msg, from, to);
-		boolean DEBUG = true;
+		boolean DEBUG = false;
 		if(DEBUG && r.nextInt(10000) == 0) 
 			System.out.println("probability of delivery" + probability);
 		// Check if message target is TO. If it is always accept.
@@ -88,12 +88,12 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 		if (SpringBoardUser.mf != null) {
 			SpringBoardUser target = SpringBoardUser.mf.getTarget(msg);
 			if(target != null && target.getID() == to.getID()) {
-				return true;
+				return 1.0;
 			} else {
-				return trueWithProbability(probability);
+				return probability;
 			}
 		} else  {
-			return trueWithProbability(probability);
+			return probability;
 		}
 	}
 
@@ -107,9 +107,9 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 			++messagesSent;
 			Integer msg = (Integer)from.messages.getElementAt(i);
 			assert msg != null;
-
-			if (shouldDeliverMessage(msg, from, to)) 
-				to.messages.addMessage(msg, areFriends);
+			double p = getFinalDeliveryPriority(msg, from, to);
+			if (trueWithProbability(p)) 
+				to.messages.addMessage(msg, areFriends, p);
 		}
 	}
 

@@ -8,7 +8,7 @@ import uk.ac.cam.cl.ss958.IntegerGeometry.Point;
 
 public class ThirdLocationBasedMessageExchange extends NakMessageProtocol {
 	private static final double DIFFUSE_DISTANCE = 30;
-	private static final int DELAY_DIVIDEDBY_16 = 1; // 
+	private static final int DELAY_DIVIDEDBY_16 = 3; // 
 	private class DelayedLocation {
 		Point [] buffer;
 		int last;
@@ -65,6 +65,7 @@ public class ThirdLocationBasedMessageExchange extends NakMessageProtocol {
 		if(DEBUG && prev == 0.0)
 			System.out.println("prev(0)");
 
+		if (prev == 1.0) return 1.0; // those from bloom filter;
 		if (prev == 0.0) return 0.0;
 		assert prev > 0.0;
 		if (maxDistance == null) {
@@ -85,9 +86,12 @@ public class ThirdLocationBasedMessageExchange extends NakMessageProtocol {
 		double curDistance = Math.sqrt(Tools.pointsDistanceSquared(a,b));
 		
 		// System.out.println("cur: " + curDistance + ", max: " + maxDistance);
-		double locationBasedProbability = Math.max(maxDistance/2-curDistance,0)/(maxDistance/2);
+		double locationBasedProbability = Math.max(2*maxDistance/3-curDistance,0)/(2*maxDistance/3);
 
-		locationBasedProbability = 0.9*Math.pow(locationBasedProbability, 3)+0.1;
+		assert 0.0 <= locationBasedProbability && locationBasedProbability <= 1.0;
+		double curve = (1.0 - Math.pow(1.0-locationBasedProbability,2));
+		
+		locationBasedProbability = 0.8*curve+0.2;
 		// expected value of location based probability is about 0.1
 		double ret = prev*locationBasedProbability;
 		if (DEBUG)
