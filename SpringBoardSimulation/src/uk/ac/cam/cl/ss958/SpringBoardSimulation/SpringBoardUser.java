@@ -47,6 +47,8 @@ public class SpringBoardUser extends SocialUser {
 	public static final int BLUETOOTH_MESSAGES_PER_TICK = 60;
 	public static final boolean USE_PRIORITY_BOX = false;
 	public static final MessageExchangeProtocol EXCHANGE = new BloomFilterMessageExchange();
+														   // new LosyHashTableMessageExchange();
+														   // new SpecializationMessageExchange(); 
 														   // new NaiveMessageExchange();
 														   // new NakMessageProtocol();
 														   // new LocationBasedMessageExchange();
@@ -166,20 +168,22 @@ public class SpringBoardUser extends SocialUser {
 	
 	private final int messagesPerDayTarget;
 	
-	private interface MessageStorage {
+	private static interface MessageStorage {
 		public Integer addMessage(int msg, double priority);
 		public Integer get(int index);
 		public int getSize();
 		public boolean contains(Integer x);
 	}
 	
-	private class SimpleMessageStorage implements MessageStorage {
+	private static class SimpleMessageStorage implements MessageStorage {
 		private Integer [] messages;
 		private Set<Integer> messagesSet;
 		private final int capacity;
 		private int nextSlot;
+		private SpringBoardUser owner;
 		
-		public SimpleMessageStorage(int capacity) {
+		public SimpleMessageStorage(SpringBoardUser self, int capacity) {
+			owner = self;
 			this.capacity= capacity;
 			messages = new Integer[capacity];
 			messagesSet = new HashSet<Integer>();
@@ -196,7 +200,7 @@ public class SpringBoardUser extends SocialUser {
 				}
 				messages[nextSlot] = msg;
 				messagesSet.add(msg);
-				mf.deliverMessage(msg, SpringBoardUser.this);
+				mf.deliverMessage(msg, owner);
 				ret = nextSlot;
 				nextSlot++;
 				if (nextSlot == capacity)
@@ -219,10 +223,10 @@ public class SpringBoardUser extends SocialUser {
 		}
 	}
 	
-	private class MessageSmartPriorityBox implements MessageStorage {
-		private final int SAMPLE_MESSAGES = 1000;
-		private final double [] CAPACITY_DEDICATED = {0.4, 0.3, 0.3};
-		private final double [] PRIORITY_PROPORTIONS = {0.5, 0.4, 0.1 };
+	private static class MessageSmartPriorityBox implements MessageStorage {
+		private final int SAMPLE_MESSAGES = 3000;
+		private final double [] CAPACITY_DEDICATED = {0.4, 0.3, 0.2, 0.1};
+		private final double [] PRIORITY_PROPORTIONS = {0.5, 0.4, 0.09, 0.01 };
 		
 		private double [] priorityLimitForBox;
 		MessageStorage [] storage; 
@@ -246,11 +250,11 @@ public class SpringBoardUser extends SocialUser {
 			}
 		}
 		
-		public MessageSmartPriorityBox(int capacity) {
+		public MessageSmartPriorityBox(SpringBoardUser owner, int capacity) {
 			int boxes = CAPACITY_DEDICATED.length;
 			storage = new MessageStorage[boxes];
 			for (int i=0; i<boxes; ++i) {
-				storage[i] = new SimpleMessageStorage((int)(CAPACITY_DEDICATED[i]*capacity));
+				storage[i] = new SimpleMessageStorage(owner, (int)(CAPACITY_DEDICATED[i]*capacity));
 			}
 			priorityLimitForBox = new double [boxes];
 			
@@ -264,11 +268,37 @@ public class SpringBoardUser extends SocialUser {
 			samples = new double[SAMPLE_MESSAGES];
 		}
 		
+		
+		private final static boolean DEBUG = false;
+		
+		static long [] stats;
+		static long nextGo;
+		
+		private void updateStats(int x) {
+			if(!DEBUG) return;
+			if (stats == null) {
+				stats = new long [storage.length];
+				nextGo = RealisticModel.getStepsExecuted() + 100;
+			}
+			stats[x] ++;
+			if(nextGo <= RealisticModel.getStepsExecuted()) {
+				nextGo += 100;
+				System.out.println("nextGp: " + nextGo);
+				System.out.println("state after + " + RealisticModel.getStepsExecuted());
+				for (int i=0; i<stats.length; ++i) {
+					System.out.println("     Box " +i+": " + (double)stats[i]/User.getNumerOfUsers()/100);
+					stats[i] = 0;
+				}
+			}
+			
+		}
+		
 		public Integer addMessage(int msg, double priority) {
 			updatePriorityDistribution(priority);
 			int sizeSoFar = 0;
 			for (int i=0; i<storage.length; ++i) {
 				if(priority <= priorityLimitForBox[i]) {
+					updateStats(i);
 					Integer indexReceived = storage[i].addMessage(msg, priority);
 					if (indexReceived == null)
 						return null;
@@ -317,11 +347,11 @@ public class SpringBoardUser extends SocialUser {
 		
 		public MessageSystem() {
 			if (USE_PRIORITY_BOX) {
-				msgFriends = new MessageSmartPriorityBox(MESSAGES_CAPACITY_FRIEND);
-				msgOthers = new MessageSmartPriorityBox(MESSAGES_CAPACITY_OTHER);
+				msgFriends = new MessageSmartPriorityBox(SpringBoardUser.this, MESSAGES_CAPACITY_FRIEND);
+				msgOthers = new MessageSmartPriorityBox(SpringBoardUser.this, MESSAGES_CAPACITY_OTHER);
 			} else {
-				msgFriends = new SimpleMessageStorage(MESSAGES_CAPACITY_FRIEND);
-				msgOthers = new SimpleMessageStorage(MESSAGES_CAPACITY_OTHER);
+				msgFriends = new SimpleMessageStorage(SpringBoardUser.this, MESSAGES_CAPACITY_FRIEND);
+				msgOthers = new SimpleMessageStorage(SpringBoardUser.this, MESSAGES_CAPACITY_OTHER);
 			}
 		}
 		

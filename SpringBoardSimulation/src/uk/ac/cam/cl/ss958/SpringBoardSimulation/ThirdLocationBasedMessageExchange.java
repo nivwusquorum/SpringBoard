@@ -60,42 +60,48 @@ public class ThirdLocationBasedMessageExchange extends NakMessageProtocol {
 	@Override
 	protected double getProbabilityOfDelivery(int msg, SpringBoardUser from,
 			SpringBoardUser to) {
-		double prev = super.getProbabilityOfDelivery(msg, from, to);
-		boolean DEBUG = false; // r.nextInt(1000) == 0;
-		if(DEBUG && prev == 0.0)
-			System.out.println("prev(0)");
-
-		if (prev == 1.0) return 1.0; // those from bloom filter;
-		if (prev == 0.0) return 0.0;
-		assert prev > 0.0;
+		double remResult = super.getProbabilityOfDelivery(msg, from, to);
+		
+		if (remResult == ALWAYS_SEND || remResult == DONT_SEND)
+			return remResult;
+		
 		if (maxDistance == null) {
 			Dimension m = SpringBoardUser.getModelDims();
-			if (m == null) return prev;
+			if (m == null) return remResult;
 			else {
 				double dx2 = m.getWidth()*m.getWidth();
 				double dy2 = m.getHeight()*m.getHeight();
 				// add 1 to avoid division by 0 error.
 				maxDistance = Math.sqrt(dx2+dy2)+1;
 			}
+		}		
+		Point target = messageLocation.get(msg);
+		double curDistance = maxDistance;
+		Point origin = to.getLocation();
+		if(origin != null) {
+			curDistance = Math.min(curDistance,
+					Math.sqrt(Tools.pointsDistanceSquared(origin,target)));
+					
 		}
-		Point delayed = getDl(to.getID()).getDelayedLocation();
+		origin = getDl(to.getID()).getDelayedLocation();
+		if(origin != null) {
+			curDistance = Math.min(curDistance,
+					Math.sqrt(Tools.pointsDistanceSquared(origin,target)));
+					
+		}
 		
-		Point a = (delayed == null) ? to.getLocation() : delayed;
-		Point b = messageLocation.get(msg);
-		assert b != null;
-		double curDistance = Math.sqrt(Tools.pointsDistanceSquared(a,b));
+		
 		
 		// System.out.println("cur: " + curDistance + ", max: " + maxDistance);
-		double locationBasedProbability = Math.max(2*maxDistance/3-curDistance,0)/(2*maxDistance/3);
+		double locationBasedProbability = Math.max((2*maxDistance/3)-curDistance,0)/((2*maxDistance/3));
 
 		assert 0.0 <= locationBasedProbability && locationBasedProbability <= 1.0;
 		double curve = (1.0 - Math.pow(1.0-locationBasedProbability,2));
 		
-		locationBasedProbability = 0.8*curve+0.2;
+		locationBasedProbability = 0.9*curve+0.1;
 		// expected value of location based probability is about 0.1
-		double ret = prev*locationBasedProbability;
-		if (DEBUG)
-			System.out.println("prev(" + prev + ") -> prob(" + ret+") when dist= " +curDistance);
+		double ret = remResult*locationBasedProbability;
+	
 		return ret;
 		
 	}

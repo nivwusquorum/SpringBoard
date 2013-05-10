@@ -39,6 +39,7 @@ public class SpringBoardMessageFactory {
 		public final SpringBoardUser to;
 		public final double startingDistance;
 		public double time;
+		public int maxMessages;
 		int noOfCopies;
 		// if false was send to smb not on friend list.
 		public final boolean toFriend;
@@ -55,6 +56,7 @@ public class SpringBoardMessageFactory {
 			time = model.getStepsExecuted();
 			wasDelivered = false;
 			noOfCopies = 0;
+			maxMessages = 0;
 		}
 	}
 
@@ -84,6 +86,7 @@ public class SpringBoardMessageFactory {
 		Message m = messages.get(mId);
 		if (m != null) {
 			m.noOfCopies++;
+			m.maxMessages = Math.max(m.maxMessages, m.noOfCopies);
 			if(m.to.getID() == to.getID()) {
 				m.wasDelivered = true;
 				m.time = model.getStepsExecuted() - m.time;
@@ -208,6 +211,9 @@ plot, BorderLayout.CENTER);
 			int droppedToFriends = 0;
 			double droppedDistance = 0.0;
 			
+			double maxCopiesDelivered = 0;
+			double maxCopiesLost = 0;
+			
 			int total = processedMessages.size();
 			for (Message m : processedMessages) {
 				averageDistance += m.startingDistance;
@@ -218,11 +224,19 @@ plot, BorderLayout.CENTER);
 				if (!m.wasDelivered) {
 					if (m.toFriend) ++droppedToFriends;
 					droppedDistance += m.startingDistance;
+					maxCopiesLost += m.maxMessages;
+				} else {
+					maxCopiesDelivered += m.maxMessages;
 				}
 			}
+			
+			double avgMaxCopies = (maxCopiesDelivered+maxCopiesLost)/processedMessages.size();
+			
+			maxCopiesDelivered/=deliveredMessages;
+			maxCopiesLost/=(total-deliveredMessages);
 
 			averageDistance/=processedMessages.size();
-			averageTimeDays/=processedMessages.size()*RealisticModel.SIMULATION_DAY;
+			averageTimeDays/=(long)processedMessages.size()*RealisticModel.SIMULATION_DAY;
 			droppedDistance /= (total - deliveredMessages);
 			
 			String ans  = "Properties:\n";
@@ -237,7 +251,11 @@ plot, BorderLayout.CENTER);
 			ans += "  - " + (total - sentToFriends) + " to others (" + ((total-sentToFriends)*100+total/2)/total + "%)\n";
 			ans += "Average time (days): " + averageTimeDays +"\n";
 			ans += "Average distance: " + averageDistance +"\n";
-			
+			ans += "Average peak number of copy holders: " +avgMaxCopies +"\n";
+			ans +=    "   ->  for delivered: " + maxCopiesDelivered +"\n";
+			if (total - deliveredMessages > 0) {
+				ans += "  ->  for not delivered: " + maxCopiesLost + "\n";
+			}
 			JTextArea text = new JTextArea(ans);
 			text.setEditable(false);
 			ret.add(text);

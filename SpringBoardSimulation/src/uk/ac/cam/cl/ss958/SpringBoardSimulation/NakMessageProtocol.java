@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class NakMessageProtocol extends BloomFilterMessageExchange{
+import com.sun.org.apache.bcel.internal.generic.LLOAD;
+
+public class NakMessageProtocol extends BloomFilterMessageExchange {
 	private static final int REMS_CAPACITY = 1000;
 	private static final boolean CHECK_THEORETICAL_UPPER_BOUND = false;
 
@@ -101,18 +103,21 @@ public class NakMessageProtocol extends BloomFilterMessageExchange{
 	@Override
 	protected double getProbabilityOfDelivery(int msg, SpringBoardUser from,
 			SpringBoardUser to) {
+		double losyHashResult = super.getProbabilityOfDelivery(msg, from, to);
+		if (losyHashResult == ALWAYS_SEND || losyHashResult == DONT_SEND) 
+			return losyHashResult;
 		if (isMessageInREMs(msg, to)) {
 			// have REM for it, ignore it and bump up REM.
-			return 0.0;
+			return DONT_SEND;
 		} else {
 			Set<Integer> myMessages = messagesDeliveredTo.get(to.getID());
 			if (myMessages != null && myMessages.contains(msg)) {
 				// if I don't have rem, but it was delivered to me, emit another rem.
 				addRem(to,msg);
-				return 0.0;
+				return DONT_SEND;
 			} else {
 				// return what I got from bloom filter.
-				return super.getProbabilityOfDelivery(msg, from, to);
+				return losyHashResult;
 			}
 		}
 	}
