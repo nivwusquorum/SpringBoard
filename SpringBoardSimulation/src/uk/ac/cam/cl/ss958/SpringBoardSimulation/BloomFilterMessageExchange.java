@@ -10,8 +10,8 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 	private static final int TICKS_BETWEEN_WIPES = RealisticModel.SIMULATION_DAY;
 	private static final int BLOOM_FILTER_N = 1000000;
 	private static final double BLOOM_FILTER_C = 0.05;
-	private static final double PROBABILITY_TRANSMIT_SEEN = 0.5;
-	private static final double PROBABILITY_NOTSEEN = 1.0;
+	private static final double PROBABILITY_TRANSMIT_SEEN = 0.1;
+	private static final double PROBABILITY_NOTSEEN = 0.5;
 	private static final int BLOOM_HASHES = 34;
 	
 	protected static final double DONT_SEND = -1.0;

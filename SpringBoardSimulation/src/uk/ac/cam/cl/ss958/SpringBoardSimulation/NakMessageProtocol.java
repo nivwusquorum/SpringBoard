@@ -37,7 +37,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange {
 		
 		public Integer get(int w) {
 			w=next-1-w;
-			while (w < 0) w+=capacity;
+			if (w < 0) w+=capacity;
 			return buffer[w];
 		}
 		
@@ -103,9 +103,9 @@ public class NakMessageProtocol extends BloomFilterMessageExchange {
 	@Override
 	protected double getProbabilityOfDelivery(int msg, SpringBoardUser from,
 			SpringBoardUser to) {
-		double losyHashResult = super.getProbabilityOfDelivery(msg, from, to);
-		if (losyHashResult == ALWAYS_SEND || losyHashResult == DONT_SEND) 
-			return losyHashResult;
+		double prevResult = super.getProbabilityOfDelivery(msg, from, to);
+		if (prevResult == ALWAYS_SEND || prevResult == DONT_SEND) 
+			return prevResult;
 		if (isMessageInREMs(msg, to)) {
 			// have REM for it, ignore it and bump up REM.
 			return DONT_SEND;
@@ -117,7 +117,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange {
 				return DONT_SEND;
 			} else {
 				// return what I got from bloom filter.
-				return losyHashResult;
+				return prevResult;
 			}
 		}
 	}
@@ -132,6 +132,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange {
 		CircularBuffer cb = REMs.get(from.getID());
 		if (cb == null) 
 			return;
+		// how about trying Math.min(maxMessages,100));
 		for (int i=0; i<Math.min(cb.capacity, 2*maxMessages); ++i) {
 			Integer rem = cb.get(i);
 			if (rem == null) break;

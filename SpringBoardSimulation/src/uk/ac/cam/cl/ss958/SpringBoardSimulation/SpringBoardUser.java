@@ -46,11 +46,11 @@ public class SpringBoardUser extends SocialUser {
 	public static final int BLUETOOTH_QUERY_FREQUENCY = 100;
 	public static final int BLUETOOTH_MESSAGES_PER_TICK = 60;
 	public static final boolean USE_PRIORITY_BOX = false;
-	public static final MessageExchangeProtocol EXCHANGE = new BloomFilterMessageExchange();
+	public static final MessageExchangeProtocol EXCHANGE = // new BloomFilterMessageExchange();
 														   // new LosyHashTableMessageExchange();
 														   // new SpecializationMessageExchange(); 
 														   // new NaiveMessageExchange();
-														   // new NakMessageProtocol();
+														   new NakMessageProtocol();
 														   // new LocationBasedMessageExchange();
 														   // new SecondLocationBasedMessageExchange();
 														   // new ThirdLocationBasedMessageExchange();
