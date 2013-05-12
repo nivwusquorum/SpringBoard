@@ -50,11 +50,9 @@ public class SpringboardDatabaseHelper extends SQLiteOpenHelper implements Provi
 	private void initValues(SQLiteDatabase db) {
 		ContentValues cv = new ContentValues();
 		cv.put(SpringboardSqlSchema.Strings.Properties.KEY_NAME, 
-			   SpringboardSqlSchema.Strings.Properties.P_USERNAME);
-	    Random generator = new Random();
-        String randomId = "sb_user" + generator.nextInt(1000);
-		cv.put(SpringboardSqlSchema.Strings.Properties.KEY_VALUE, 
-			   randomId);
+			   SpringboardSqlSchema.Strings.Properties.P_PROFILE_CREATED);
+		cv.put(SpringboardSqlSchema.Strings.Properties.KEY_VALUE, "false");
+		db.insert(SpringboardSqlSchema.Strings.Properties.NAME, null, cv);
 	}
 
 	@Override

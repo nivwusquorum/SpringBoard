@@ -170,7 +170,7 @@ public class BluetoothFriendingService {
     }
 
     public synchronized void stop() {
-        if (D) Log.d(TAG, "stop");
+        if (D) Log.d(TAG, "stop bluetooth");
 
         if (mConnectThread != null) {
             mConnectThread.cancel();
@@ -263,7 +263,7 @@ public class BluetoothFriendingService {
                     // successful connection or an exception
                     socket = mmServerSocket.accept();
                 } catch (IOException e) {
-                    Log.e(TAG, "AcceptThread accept() failed", e);
+                    Log.e(TAG, "AcceptThread accept() failed (expected when attempting connection)", e);
                     break;
                 }
 

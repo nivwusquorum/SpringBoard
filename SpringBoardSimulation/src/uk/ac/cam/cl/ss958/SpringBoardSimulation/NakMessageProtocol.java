@@ -133,7 +133,7 @@ public class NakMessageProtocol extends BloomFilterMessageExchange {
 		if (cb == null) 
 			return;
 		// how about trying Math.min(maxMessages,100));
-		for (int i=0; i<Math.min(cb.capacity, 2*maxMessages); ++i) {
+		for (int i=0; i<Math.min(cb.capacity/2, maxMessages); ++i) {
 			Integer rem = cb.get(i);
 			if (rem == null) break;
 			if (to.messages.contains(rem) || r.nextInt(10) == 0) {

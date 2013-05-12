@@ -21,6 +21,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application
         android:allowBackup="true"
@@ -36,6 +37,11 @@
             android:name="uk.ac.cam.cl.ss958.springboard.AddFriendActivity"
             android:label="Add a friend" >
             
+        </activity>
+        
+        <activity
+            android:name="uk.ac.cam.cl.ss958.springboard.CreateProfileActivity"
+            android:label="Create your profile" >
         </activity>
 
         <activity
