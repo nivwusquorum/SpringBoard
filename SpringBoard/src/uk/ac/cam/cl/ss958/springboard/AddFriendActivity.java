@@ -419,9 +419,8 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 				super.allDone();
 				Log.d(TAG, "FRIENDSHIP: allDone");
 
+				friendAdded(fP.getName());
 				fP = null;
-				mBluetooth.stop();
-				mBluetooth.start();
 			}
 
 			@Override
