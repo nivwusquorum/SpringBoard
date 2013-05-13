@@ -347,6 +347,7 @@ public class BluetoothFriendingService {
                     Log.e(TAG, "unable to close() " +
                             " socket during connection failure", e2);
                 }
+                Log.d(TAG, "mConnectThread failed: "+ e.getMessage());
                 connectionFailed();
                 return;
             }
@@ -369,6 +370,9 @@ public class BluetoothFriendingService {
         }
     }
 
+    protected void concumeData(byte [] b, int len) {
+    	
+    }
     /**
      * This thread runs during a connection with a remote device.
      * It handles all incoming and outgoing transmissions.
@@ -398,15 +402,16 @@ public class BluetoothFriendingService {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
-            byte[] buffer = new byte[1024];
             int bytes;
 
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
+                	byte[] buffer = new byte[1024];
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
-
+                    concumeData(buffer, bytes);
+                    
                     // Send the obtained bytes to the UI Activity
                     mHandler.obtainMessage(AddFriendActivity.MESSAGE_READ, bytes, -1, buffer)
                             .sendToTarget();
@@ -427,11 +432,11 @@ public class BluetoothFriendingService {
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
-                // mmOutStream.flush();
+                mmOutStream.flush();
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(AddFriendActivity.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Log.e(TAG, "Exception during write", e);
             }
         }

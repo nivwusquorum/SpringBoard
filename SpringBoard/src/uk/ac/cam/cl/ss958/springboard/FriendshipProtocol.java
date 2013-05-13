@@ -1,10 +1,12 @@
 package uk.ac.cam.cl.ss958.springboard;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -12,7 +14,10 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
+import android.widget.SlidingDrawer;
 import static junit.framework.Assert.*;
 
 import uk.ac.cam.cl.ss958.springboard.content.DatabaseContentProvider;
@@ -20,19 +25,59 @@ import uk.ac.cam.cl.ss958.springboard.content.SpringboardSqlSchema;
 import uk.ac.cam.cl.ss958.toolkits.SerializableToolkit;
 
 public abstract class FriendshipProtocol {
-	private static final int CHUNK_SIZE = 50;
-
+	private static final int CHUNK_SIZE = 100;
+ 
 	private int partsFinished;
 
-	private static class ProfileInfo implements Serializable {
+	private static class ProfileInfo implements Serializable, Parcelable {
 		final String username;
 		final String organization;
+		final Bitmap picture;
 
-		public ProfileInfo(String u, String o) {
+		public ProfileInfo(String u, String o, Bitmap b) {
+			Log.d(TAG, "Created new profile info of user: " + u);
 			username = u;
 			organization = o;
+			picture = b;
 		}
 
+		@Override
+		public int describeContents() {
+			return 0;
+		}
+
+		@Override
+		public void writeToParcel(Parcel in, int flags) {
+			in.writeString(username);
+			in.writeString(organization);
+			/*ByteArrayOutputStream stream = new ByteArrayOutputStream();
+	        picture.compress(Bitmap.CompressFormat.PNG, 100, stream);
+	        byte[] byteArray = stream.toByteArray();
+	        in.writeInt(byteArray.length);
+	        in.writeByteArray(byteArray);*/
+		}
+
+		public static final Parcelable.Creator<ProfileInfo> CREATOR
+		= new Parcelable.Creator<ProfileInfo>() {
+			public ProfileInfo createFromParcel(Parcel in) {
+				return new ProfileInfo(in);
+			}
+
+			public ProfileInfo[] newArray(int size) {
+				return new ProfileInfo[size];
+			}
+		};
+
+		private ProfileInfo(Parcel in) {
+			username = in.readString();
+			organization = in.readString();
+			/*int arrlength = in.readInt();
+			
+			byte [] arr = new byte[arrlength];
+			in.readByteArray(arr);
+			picture = BitmapFactory.decodeByteArray(arr, 0, arr.length);*/
+			picture = null;
+		}
 	}
 
 	private synchronized void maybeFinish() {
@@ -66,17 +111,21 @@ public abstract class FriendshipProtocol {
 
 	private Context c;
 
-	public FriendshipProtocol(Context c) {
+	public FriendshipProtocol(Context con) {
+		c = con;
 		partsFinished = 0;
+		// totalByteCount = -1;
 		try {
 			showMessage("Attempting to establish Friendship");
-			ProfileInfo pi = new ProfileInfo("Szymon Sidor", "Cambridge");
+			ProfileInfo pi = readMyProfile();
+			
+			Parcel parcel = Parcel.obtain();
+			 pi.writeToParcel(parcel, 0);
 
-			mPiSerialized = SerializableToolkit.toBytes(pi);
+			mPiSerialized = parcel.marshall();
 
-			writeContent(intToByteArray(mPiSerialized.length));
+			writeContent(intToByteArray(mPiSerialized.length));			
 
-			Log.d(TAG, "array size: " + mPiSerialized.length);
 
 			byte [] b = new byte [CHUNK_SIZE];
 			for(int i = 0; i<mPiSerialized.length; i+=CHUNK_SIZE) {
@@ -91,7 +140,7 @@ public abstract class FriendshipProtocol {
 			}
 
 			maybeFinish();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			Log.d(TAG, "Exception while sending data:" +e.getMessage());
 			for (StackTraceElement el : e.getStackTrace()) {
 				Log.d(TAG, el.toString());
@@ -106,20 +155,29 @@ public abstract class FriendshipProtocol {
 	byte [] result;
 
 	protected void readContent(byte [] buff, int len) {
+		for (int i=0; i<len; ++i) {
+			logReadByte(buff[i]);
+		}
+		
 		if (totalByteCount == -1) {
 			assertTrue(len >= 4);
 
 			totalByteCount = byteArrayToInt(buff);
-			Log.d(TAG, "received array size: " + totalByteCount);
+
 			nextByte = 0;
 
+			if (totalByteCount < 0 || totalByteCount > 4000000) {
+				Log.d(TAG, "Wrong array size: " + totalByteCount);
+				stop();
+				return;
+			}
 			result = new byte[totalByteCount];
 
 			if (len > 4) {
 				readToResult(buff, 4, len);
-				return;
 
 			}
+			return;
 		}
 
 		readToResult(buff, 0, len);
@@ -136,7 +194,9 @@ public abstract class FriendshipProtocol {
 
 	protected void readingDone() {
 		try {
-			ProfileInfo pi = (ProfileInfo)SerializableToolkit.fromBytes(result);
+			Parcel res = Parcel.obtain();
+			res.unmarshall(result, 0, totalByteCount);
+			ProfileInfo pi = new ProfileInfo(res);
 			showMessage("You are now friends with " + pi.username + " from " + pi.organization);
 			maybeFinish();
 		} catch (Exception e) {
@@ -147,27 +207,69 @@ public abstract class FriendshipProtocol {
 			stop();
 		}
 	}
+	
+	private ArrayList<Byte> sent;
+	private ArrayList<Byte> read;
+	
+	private void logSentByte(byte x)  {
+		if (sent == null) {
+			sent = new ArrayList<Byte>();
+		}
+		sent.add(x);
+	}
 
+	private void logReadByte(byte x)  {
+		if (read == null) {
+			read = new ArrayList<Byte>();
+		}
+		read.add(x);
+	}
+	
+	private void logCommunication() {
+		synchronized (this) {
+			if (sent != null || read != null) Log.d(TAG, "Logging communication.");
+			if (sent != null) {
+				String x = "";
+				for (Byte b : sent) {
+					x +="" + b + " ";
+				}
+				Log.d (TAG, "Data sent: " + x);
+				sent = null;
+			}
+			
+			if (read != null) {
+				String y = "";
+				for (Byte b : read) {
+					y +="" + b + " ";
+				}
+				Log.d (TAG, "Data read: " + y);
+				read = null;
+			}
+		}
+	}
 
+	boolean wasError = true;
 	public void stop() {
-		showMessage("Friendship establishment Failed.");
+		if (wasError) {
+			showMessage("Friendship establishment Failed.");
+		}
+		logCommunication();
 	}
 
 	protected void allDone() {
+		wasError = false;
 		showMessage("All done!");
+		stop();
 	}
 
-	protected abstract void writeContent(byte [] buff);
+	protected void writeContent(byte [] buff) {
+		for(int i=0; i<buff.length; ++i) {
+			logSentByte(buff[i]);
+		}
+	}
 
 	protected abstract void showMessage(String m);
 
-
-	public static void main(String [] args) throws Exception {
-		ProfileInfo pi = new ProfileInfo("Szymon Sidor", "Cambridge");
-		byte [] arr  = SerializableToolkit.toBytes(pi);
-		System.out.println(arr.length);
-
-	}
 
 	private static Uri propertiesTableUri = 
 			Uri.parse("content://" + DatabaseContentProvider.AUTHORITY +
@@ -202,10 +304,11 @@ public abstract class FriendshipProtocol {
 				c.moveToNext();
 			}
 			assertTrue(username != null && organization != null && picture != null);
-
+			return new ProfileInfo(username, organization, picture);
 		} catch (URISyntaxException e) {
 			Log.d(TAG, "Error creating profile info,");
+			stop();
+			return null;
 		}
-		return null;
 	}
 }

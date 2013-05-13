@@ -35,12 +35,12 @@ import java.util.Map;
 import android.widget.Toast;
 
 public class AddFriendActivity extends SherlockFragmentActivity {
-    private static final String TAG = "SpringBoard";
+	private static final String TAG = "SpringBoard";
 
 	private static final int REQUEST_ENABLE_BT_FOR_SCAN = 2;
 	private static final int REQUEST_ENABLE_BT = 2;
 
-	
+
 	private Button mBtnDiscoverable;
 	private Button mBtnScan;
 	private ImageView mImgDiscoverable;
@@ -52,8 +52,13 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.addfriend);
-		
-		mBluetooth = new BluetoothFriendingService(this, mHandler);
+
+		mBluetooth = new BluetoothFriendingService(this, mHandler) {
+			protected void concumeData(byte[] b, int len) {
+				super.concumeData(b, len);
+				passToFriendshipEstablishment(b, len);
+			};
+		};
 
 		mBtnDiscoverable = (Button)findViewById(R.id.btnbluetoothdiscoverable);
 		mBtnScan = (Button)findViewById(R.id.btnbluetoothscan);
@@ -68,32 +73,32 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 				onDiscoverabilityChanged(isDiscoverable());
 			}
 		});
-		
+
 		mBtnScan.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				
+
 				if (!mBluetooth.getAdapter().isEnabled()) {
 					Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 					startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT_FOR_SCAN);
 				} else {
 					attemptToStartScan();
 				}
-					
+
 			}
 		});
-		
-		
+
+
 		onDiscoverabilityChanged(isDiscoverable());
-		
+
 		mFragmentBluetoothList = new DiscoveredFriendsFragment();
 		getSupportFragmentManager().beginTransaction().
 		add(R.id.bluetoothlist, mFragmentBluetoothList).commit();
-		
+
 	}
 
 
-	
+
 	@Override
 	protected void onStart() {
 		if (!mBluetooth.getAdapter().isEnabled()) {
@@ -103,7 +108,7 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 		super.onStart();
 		registerReceivers();
 	}
-	
+
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -111,7 +116,7 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 			mBluetooth.start();
 		}
 	}
-	
+
 	@Override
 	protected void onPause() {
 		super.onPause();
@@ -119,28 +124,28 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 			mBluetooth.stop();
 		}
 	}
-	
+
 	protected void onStop() {
 		super.onStop();
 		unregisterReceiver(bluetoothReceiver);
 	}
-	
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        // Stop the Bluetooth chat services
-        if (mBluetooth != null) mBluetooth.stop();
-    }
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		// Stop the Bluetooth chat services
+		if (mBluetooth != null) mBluetooth.stop();
+	}
 
 
-	
+
 	void registerReceivers() {
 		IntentFilter filter = 
 				new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
 		filter.addAction(BluetoothDevice.ACTION_FOUND);
 		filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
 		registerReceiver(bluetoothReceiver, filter);
-		
+
 	}
 	// it requests bluetooth automatically
 	void requestDiscoverability() {
@@ -161,9 +166,9 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 		setResult(RESULT_CANCELED, returnIntent);        
 		finish();
 	}
-	
-	
-	
+
+
+
 	void attemptToStartScan() {
 		mBluetooth.getAdapter().cancelDiscovery();
 		if (!mBluetooth.getAdapter().startDiscovery()) {
@@ -231,7 +236,7 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 		r.run();
 	}
 
-	
+
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
 		if (requestCode == REQUEST_ENABLE_BT_FOR_SCAN) {
@@ -242,7 +247,7 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 				showMessage("You must enable bluetooth to scan for visible friends!", null);
 			}
 		}
-		
+
 		if (requestCode == REQUEST_ENABLE_BT) {
 			if (resultCode == RESULT_OK) {
 				if (mBluetooth.getState() == mBluetooth.STATE_NONE) {
@@ -251,25 +256,25 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 			}
 		}
 	}
-	
+
 	private void sendBluetoothMessage(String message) {
-        // Check that we're actually connected before trying anything
-        if (mBluetooth.getState() != BluetoothFriendingService.STATE_CONNECTED) {
-            Log.e(TAG, "Sending message before connected!");
-            friendNotAdded();
-            return;
-        }
+		// Check that we're actually connected before trying anything
+		if (mBluetooth.getState() != BluetoothFriendingService.STATE_CONNECTED) {
+			Log.e(TAG, "Sending message before connected!");
+			friendNotAdded();
+			return;
+		}
 
-        // Check that there's actually something to send
-        if (message.length() > 0) {
-            // Get the message bytes and tell the BluetoothChatService to write
-            byte[] send = message.getBytes();
-            mBluetooth.write(send);
-        }
-    }
-	
+		// Check that there's actually something to send
+		if (message.length() > 0) {
+			// Get the message bytes and tell the BluetoothChatService to write
+			byte[] send = message.getBytes();
+			mBluetooth.write(send);
+		}
+	}
 
-	
+
+
 	//This will handle the broadcast
 	private BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
 		//@Override
@@ -286,32 +291,32 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 						BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE;
 				onDiscoverabilityChanged(isDiscoverable);
 			} else if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-			     BluetoothDevice device = 
-			    		 intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-			     mFragmentBluetoothList.addBluetoothDevice(device);
+				BluetoothDevice device = 
+						intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+				mFragmentBluetoothList.addBluetoothDevice(device);
 			} else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
 				int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
-											   BluetoothAdapter.STATE_OFF);
+						BluetoothAdapter.STATE_OFF);
 				if (state == BluetoothAdapter.STATE_ON) {
 					if (mBluetooth.getState() == mBluetooth.STATE_NONE) {
 						mBluetooth.start();
 					}
 				} else {
-				    if (mBluetooth.getState() != mBluetooth.STATE_NONE) {
-				    	mBluetooth.stop();
-				    }
+					if (mBluetooth.getState() != mBluetooth.STATE_NONE) {
+						mBluetooth.stop();
+					}
 				}
 			}
 		}
 	};
-	
+
 	public BluetoothFriendingService getBluetoothService() {
 		return mBluetooth;
 	}
-	
-	
+
+
 	public static class DiscoveredFriendsFragment extends SherlockListFragment {
-		
+
 		private ArrayAdapter<String> adapter;
 		private Map<Integer, BluetoothDevice> position2bluetooth;
 		private BluetoothFriendingService mBluetooth;
@@ -327,9 +332,9 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 			setListAdapter(adapter);
 			position2bluetooth = new HashMap<Integer, BluetoothDevice>();
 		}
-		
-		
-		
+
+
+
 		@Override
 		public void onAttach(Activity activity) {
 			parent = (AddFriendActivity)activity;
@@ -351,12 +356,12 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 			adapter.add(suggested_name);
 			return suggested_name;
 		}
-		
+
 		public void addBluetoothDevice(BluetoothDevice bd) {
 			String name = addItem(bd.getName());
 			position2bluetooth.put(adapter.getPosition(name), bd);
 		}
-		
+
 		public void clearAll() {
 			adapter.clear();
 		}
@@ -377,7 +382,7 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 				return s1.compareTo(s2);
 			}
 		}
-		
+
 		@Override
 		public void onDestroy() {
 			super.onDestroy();
@@ -385,24 +390,30 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 
 
 	}
-	
+
 	private FriendshipProtocol fP;
-	
+
 	private void establishFriendship() {
 		Log.d(TAG, "FRIENDSHIP: establish");
 		fP = new FriendshipProtocol(this) {
 			@Override
 			protected void writeContent(byte[] buff) {
+				super.writeContent(buff);
 				Log.d(TAG, "FRIENDSHIP: write");
 
 				mBluetooth.write(buff);
 			}
 
 			@Override
-			protected void showMessage(String m) {
-				Toast.makeText(AddFriendActivity.this, m, Toast.LENGTH_LONG).show();
+			protected void showMessage(final String m) {
+
+				AddFriendActivity.this.runOnUiThread(new Runnable() {
+					public void run() {
+						Toast.makeText(AddFriendActivity.this, m, Toast.LENGTH_LONG).show();
+					}
+				});
 			}
-			
+
 			@Override
 			protected void allDone() {
 				super.allDone();
@@ -412,7 +423,7 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 				mBluetooth.stop();
 				mBluetooth.start();
 			}
-			
+
 			@Override
 			public void stop() {
 				Log.d(TAG, "FRIENDSHIP: stop");
@@ -422,9 +433,9 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 				fP = null;
 			}
 		};
-		
+
 	}
-	
+
 	private void stopFriendshipEstablishment() {
 		Log.d(TAG, "FRIENDSHIP: stop External");
 		if (fP != null) {
@@ -432,77 +443,77 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 			fP = null;
 		}
 	}
-	
+
 	private void passToFriendshipEstablishment(byte [] msg, int len) {
 		Log.d(TAG, "FRIENDSHIP: read external");
 		if (fP != null) {
 			fP.readContent(msg, len);
 		}
 	}
-	
-	// Message types sent from the BluetoothChatService Handler
-    public static final int MESSAGE_STATE_CHANGE = 1;
-    public static final int MESSAGE_READ = 2;
-    public static final int MESSAGE_WRITE = 3;
-    public static final int MESSAGE_DEVICE_NAME = 4;
-    public static final int MESSAGE_TOAST = 5;
-    public static final int MESSAGE_CATASTROPHY = 6;
-    
-    public static final String TEXT = "text";
-    public static final String DEVICE_NAME = "device_name";
 
-    // The Handler that gets information back from the BluetoothChatService
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-            case MESSAGE_STATE_CHANGE:
-                switch (msg.arg1) {
-                case BluetoothFriendingService.STATE_CONNECTED:
-                    //setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
-                    //mConversationArrayAdapter.clear();
-                	establishFriendship();
-                    break;
-                case BluetoothFriendingService.STATE_CONNECTING:
-                    //setStatus(R.string.title_connecting);
-                	stopFriendshipEstablishment();
-                    break;
-                case BluetoothFriendingService.STATE_LISTEN:
-                case BluetoothFriendingService.STATE_NONE:
-                    //setStatus(R.string.title_not_connected);
-                	stopFriendshipEstablishment();
-                    break;
-                }
-                break;
-            case MESSAGE_WRITE:
-                byte[] writeBuf = (byte[]) msg.obj;
-                // construct a string from the buffer
-                //String writeMessage = new String(writeBuf);
-                //Log.d(TAG, "Message sent: "+ writeMessage);
-                //mConversationArrayAdapter.add("Me:  " + writeMessage);
-                break;
-            case MESSAGE_READ:
-                byte[] readBuf = (byte[]) msg.obj;
-                passToFriendshipEstablishment(readBuf, msg.arg1);
-                // construct a string from the valid bytes in the buffer
-                //mConversationArrayAdapter.add(mConnectedDeviceName+":  " + readMessage);
-                break;
-            case MESSAGE_DEVICE_NAME:
-                // save the connected device's name
-                //mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-                //Toast.makeText(getApplicationContext(), "Connected to "
-                //               + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
-                break;
-            case MESSAGE_TOAST:
-                Toast.makeText(getApplicationContext(), msg.getData().getString(TEXT),
-                               Toast.LENGTH_SHORT).show();
-                break;
-            case MESSAGE_CATASTROPHY:
-            	showMessage(msg.getData().getString(TEXT), null);
-            	friendNotAdded();
-            }
-        }
-    };
-	
-	
+	// Message types sent from the BluetoothChatService Handler
+	public static final int MESSAGE_STATE_CHANGE = 1;
+	public static final int MESSAGE_READ = 2;
+	public static final int MESSAGE_WRITE = 3;
+	public static final int MESSAGE_DEVICE_NAME = 4;
+	public static final int MESSAGE_TOAST = 5;
+	public static final int MESSAGE_CATASTROPHY = 6;
+
+	public static final String TEXT = "text";
+	public static final String DEVICE_NAME = "device_name";
+
+	// The Handler that gets information back from the BluetoothChatService
+	private final Handler mHandler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case MESSAGE_STATE_CHANGE:
+				switch (msg.arg1) {
+				case BluetoothFriendingService.STATE_CONNECTED:
+					//setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
+					//mConversationArrayAdapter.clear();
+					establishFriendship();
+					break;
+				case BluetoothFriendingService.STATE_CONNECTING:
+					//setStatus(R.string.title_connecting);
+					stopFriendshipEstablishment();
+					break;
+				case BluetoothFriendingService.STATE_LISTEN:
+				case BluetoothFriendingService.STATE_NONE:
+					//setStatus(R.string.title_not_connected);
+					stopFriendshipEstablishment();
+					break;
+				}
+				break;
+			case MESSAGE_WRITE:
+				byte[] writeBuf = (byte[]) msg.obj;
+				// construct a string from the buffer
+				//String writeMessage = new String(writeBuf);
+				//Log.d(TAG, "Message sent: "+ writeMessage);
+				//mConversationArrayAdapter.add("Me:  " + writeMessage);
+				break;
+			case MESSAGE_READ:
+				byte[] readBuf = (byte[]) msg.obj;
+				// passToFriendshipEstablishment(readBuf, msg.arg1);
+				// construct a string from the valid bytes in the buffer
+				//mConversationArrayAdapter.add(mConnectedDeviceName+":  " + readMessage);
+				break;
+			case MESSAGE_DEVICE_NAME:
+				// save the connected device's name
+				//mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+				//Toast.makeText(getApplicationContext(), "Connected to "
+				//               + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+				break;
+			case MESSAGE_TOAST:
+				Toast.makeText(getApplicationContext(), msg.getData().getString(TEXT),
+						Toast.LENGTH_SHORT).show();
+				break;
+			case MESSAGE_CATASTROPHY:
+				showMessage(msg.getData().getString(TEXT), null);
+				friendNotAdded();
+			}
+		}
+	};
+
+
 }

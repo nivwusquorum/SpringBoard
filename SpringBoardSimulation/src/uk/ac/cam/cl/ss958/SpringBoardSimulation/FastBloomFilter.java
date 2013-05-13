@@ -62,6 +62,24 @@ public class FastBloomFilter {
 		return true;
 	}
 	
+	public static int byteArrayToInt(byte[] b) 
+	{
+		return   b[3] & 0xFF |
+				(b[2] & 0xFF) << 8 |
+				(b[1] & 0xFF) << 16 |
+				(b[0] & 0xFF) << 24;
+	}
+
+	public static byte[] intToByteArray(int a)
+	{
+		return new byte[] {
+				(byte) ((a >> 24) & 0xFF),
+				(byte) ((a >> 16) & 0xFF),   
+				(byte) ((a >> 8) & 0xFF),   
+				(byte) (a & 0xFF)
+		};
+	}
+	
 
 	
 	public static void main(String [] args) {
@@ -71,7 +89,9 @@ public class FastBloomFilter {
 		bf.add(2000);
 		System.out.println("Query for 2000: " + bf.mightContain(2000));
 
+		int v = 93316;
 		
+		System.out.println(byteArrayToInt(intToByteArray(v)));
 
 		
 	}
