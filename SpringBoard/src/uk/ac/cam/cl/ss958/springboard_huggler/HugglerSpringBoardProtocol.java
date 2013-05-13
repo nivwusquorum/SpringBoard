@@ -71,6 +71,10 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
     static final String[] PROJECTION = new String[] {
         SpringboardSqlSchema.Strings.Messages.KEY_ID,
         SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE,
+        SpringboardSqlSchema.Strings.Messages.KEY_USER,
+        SpringboardSqlSchema.Strings.Messages.KEY_MSGID,
+        SpringboardSqlSchema.Strings.Messages.KEY_TIMESTAMP,
+        SpringboardSqlSchema.Strings.Messages.KEY_TARGET
     };
 	
 	private void sendMessages(Socket s) throws Exception {
@@ -78,7 +82,12 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 		c.moveToFirst();
 		List<ChatMessage> messages = new ArrayList<ChatMessage>();
 		while(!c.isAfterLast()) {
-			messages.add(new ChatMessage("X", c.getString(1)));
+			messages.add(new ChatMessage(c.getString(2),
+										 c.getString(1),
+										 c.getLong(4),
+										 c.getInt(3),
+										 c.getString(5)
+										));
 			c.moveToNext();
 		}
 		ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
@@ -94,10 +103,15 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 		if (message instanceof List) {
 			for (Object o : (List)message) {
 				if (o instanceof ChatMessage) {
-					String m = ((ChatMessage)o).getMessage();
-	   				 ContentValues values = new ContentValues();
-	                 values.put(SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE, m);
-	                 cr.insert(messageTableUri, values);
+					ChatMessage m = (ChatMessage)o;
+					String selection = SpringboardSqlSchema.Strings.Messages.KEY_USER + " = ? AND " +
+									   SpringboardSqlSchema.Strings.Messages.KEY_MSGID + " = ?";
+					String [] selectionArgs = new String [] { m.getUser(), Integer.valueOf(m.getMsgId()).toString() };
+					Cursor c = cr.query(messageTableUri, null, selection, selectionArgs, null);
+					if (c.getCount() == 0) {
+						ContentValues cv = m.toContentValues();
+						cr.insert(messageTableUri, cv);
+					}		
 				}
 			}
 		}

@@ -13,7 +13,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 public class SqlChatMessagesTable {
-	private static final String TAG = "Huggler";
+	/*private static final String TAG = "Huggler";
 	private SQLiteDatabase db;
 	private String name;
 
@@ -68,7 +68,7 @@ public class SqlChatMessagesTable {
 		ContentValues values = new ContentValues();
 		values.put(KEY_USER, m.getUser());
 		values.put(KEY_MESSAGE, m.getMessage());
-		values.put(KEY_WHEN, m.getTimestamp().getTime());
+		values.put(KEY_WHEN, m.getTimestamp());
 		try {
 			db.insertOrThrow(name +"_normal", null, values);
 		} catch(android.database.sqlite.SQLiteConstraintException e) {
@@ -127,5 +127,5 @@ public class SqlChatMessagesTable {
 			return null;
 		}
 	}
-
+*/
 }

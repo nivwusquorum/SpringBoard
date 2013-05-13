@@ -181,6 +181,9 @@ public class FragmentFeed extends SherlockFragmentActivity {
 					values.put(SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE, messageText.getText().toString());
 
 					cr.insert(messageTableUri, values);
+					
+					messageText.setText("");
+					messageText.clearFocus();
 				}
 			});
 		}
