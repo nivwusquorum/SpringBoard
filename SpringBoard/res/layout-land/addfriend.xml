@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:layout_above="@+id/btnbluetoothdiscoverable"
             android:layout_alignParentLeft="true"
-            android:layout_below="@+id/imageView1" >
+            android:layout_below="@+id/profileImg" >
 
             <ImageView
                 android:id="@+id/imgbluetoothdiscoverable"
@@ -43,7 +43,7 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/imageView1"
+            android:id="@+id/profileImg"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"

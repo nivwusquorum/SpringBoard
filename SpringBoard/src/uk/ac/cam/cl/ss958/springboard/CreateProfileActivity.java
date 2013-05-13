@@ -138,13 +138,15 @@ public class CreateProfileActivity extends SherlockActivity {
     }
 	
 	private void saveProfileToDatabase() {
-		 final ContentResolver cr = getContentResolver();
+		final ContentResolver cr = getContentResolver();
 		 
-		ContentValues cv = property(SpringboardSqlSchema.Strings.Properties.P_PROFILE_CREATED, "true");
-		String where = SpringboardSqlSchema.Strings.Properties.KEY_NAME + " = ?";
+		String where = SpringboardSqlSchema.Strings.Properties.KEY_NAME + "=?";
 		String [] selectionArgs = {SpringboardSqlSchema.Strings.Properties.P_PROFILE_CREATED};
-		cr.update(propertiesTableUri, cv, where, selectionArgs);
+		int r = cr.delete(propertiesTableUri, where, selectionArgs);
+		Log.d(TAG, "Rows deleted: " + r);
 		
+		ContentValues cv = property(SpringboardSqlSchema.Strings.Properties.P_PROFILE_CREATED, "true");
+		cr.insert(propertiesTableUri, cv);
 		
 		cv = property(SpringboardSqlSchema.Strings.Properties.P_USERNAME, name.getText().toString());
 		cr.insert(propertiesTableUri, cv);
@@ -152,7 +154,7 @@ public class CreateProfileActivity extends SherlockActivity {
 		cv = property(SpringboardSqlSchema.Strings.Properties.P_INSTITUTION, organization.getText().toString());
 		cr.insert(propertiesTableUri, cv);
 		
-		cv = property(SpringboardSqlSchema.Strings.Properties.P_USERNAME, profileImageFile);
+		cv = property(SpringboardSqlSchema.Strings.Properties.P_IMG_PATH, selectedPrictureUri.toString());
 		cr.insert(propertiesTableUri, cv);
 		
 		
@@ -160,7 +162,8 @@ public class CreateProfileActivity extends SherlockActivity {
 		cv = new ContentValues();
 		cv.put(SpringboardSqlSchema.Strings.Friends.KEY_NAME, name.getText().toString());
 		cv.put(SpringboardSqlSchema.Strings.Friends.KEY_ORGANIZATION, organization.getText().toString());
-		cv.put(SpringboardSqlSchema.Strings.Friends.KEY_IMAGE, profileImageFile);
+		cv.put(SpringboardSqlSchema.Strings.Friends.KEY_IMAGE, selectedPrictureUri.toString());
+		cr.insert(friendTableUri, cv);
 		
 	}
 	
@@ -174,8 +177,6 @@ public class CreateProfileActivity extends SherlockActivity {
 
 
 	private final int SELECT_PICTURE_REQUEST_CODE = 4;
-
-	public final String profileImageFile = "profileimage.jpg";
 
 	
 	private Uri selectedPrictureUri = null;
@@ -300,15 +301,16 @@ public class CreateProfileActivity extends SherlockActivity {
 						selectedImageUri = outputFileUri;
 					}
 				}
-				this.selectedPrictureUri = selectedImageUri;
 				try {
 					Bitmap thumb = getPreview(selectedImageUri);
-					selectedPrictureUri = storeImage(thumb);
-					
+					selectedImageUri = storeImage(thumb);
+					Log.d(TAG, "Created thumbnail without problems.");
 				} catch (Exception e) {
 					Toast.makeText(this, "Error while creating thumbnail!", Toast.LENGTH_LONG);
+					Log.d(TAG, "Error creating thumbnatil.");
 					e.printStackTrace();
 				}
+				this.selectedPrictureUri = selectedImageUri;
 				profilePicture.setImageURI(selectedPrictureUri);
 				profilePicture.refreshDrawableState();
 				Toast.makeText(this, "Selected picture: " + selectedPrictureUri, Toast.LENGTH_LONG).show();

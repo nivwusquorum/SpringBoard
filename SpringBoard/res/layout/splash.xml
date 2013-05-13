@@ -5,7 +5,7 @@
     android:background="#4682B4" >
 
     <ImageView
-        android:id="@+id/imageView1"
+        android:id="@+id/profileImg"
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_centerHorizontal="true"
@@ -17,7 +17,7 @@
         android:layout_width="match_parent"
         android:layout_height="30dp"
         android:layout_alignParentLeft="true"
-        android:layout_below="@+id/imageView1" >
+        android:layout_below="@+id/profileImg" >
     </FrameLayout>
 
     <TextView

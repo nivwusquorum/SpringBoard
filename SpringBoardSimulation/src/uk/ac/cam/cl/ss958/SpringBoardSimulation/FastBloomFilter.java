@@ -62,6 +62,7 @@ public class FastBloomFilter {
 		return true;
 	}
 	
+
 	
 	public static void main(String [] args) {
 		FastBloomFilter bf = new FastBloomFilter(1000, 10);
@@ -69,6 +70,8 @@ public class FastBloomFilter {
 		System.out.println("Adding 2000");
 		bf.add(2000);
 		System.out.println("Query for 2000: " + bf.mightContain(2000));
+
+		
 
 		
 	}

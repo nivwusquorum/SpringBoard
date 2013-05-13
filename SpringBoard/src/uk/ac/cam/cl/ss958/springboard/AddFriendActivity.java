@@ -386,7 +386,59 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 
 	}
 	
+	private FriendshipProtocol fP;
 	
+	private void establishFriendship() {
+		Log.d(TAG, "FRIENDSHIP: establish");
+		fP = new FriendshipProtocol(this) {
+			@Override
+			protected void writeContent(byte[] buff) {
+				Log.d(TAG, "FRIENDSHIP: write");
+
+				mBluetooth.write(buff);
+			}
+
+			@Override
+			protected void showMessage(String m) {
+				Toast.makeText(AddFriendActivity.this, m, Toast.LENGTH_LONG).show();
+			}
+			
+			@Override
+			protected void allDone() {
+				super.allDone();
+				Log.d(TAG, "FRIENDSHIP: allDone");
+
+				fP = null;
+				mBluetooth.stop();
+				mBluetooth.start();
+			}
+			
+			@Override
+			public void stop() {
+				Log.d(TAG, "FRIENDSHIP: stop");
+				super.stop();
+				mBluetooth.stop();
+				mBluetooth.start();
+				fP = null;
+			}
+		};
+		
+	}
+	
+	private void stopFriendshipEstablishment() {
+		Log.d(TAG, "FRIENDSHIP: stop External");
+		if (fP != null) {
+			fP.stop();
+			fP = null;
+		}
+	}
+	
+	private void passToFriendshipEstablishment(byte [] msg, int len) {
+		Log.d(TAG, "FRIENDSHIP: read external");
+		if (fP != null) {
+			fP.readContent(msg, len);
+		}
+	}
 	
 	// Message types sent from the BluetoothChatService Handler
     public static final int MESSAGE_STATE_CHANGE = 1;
@@ -409,29 +461,30 @@ public class AddFriendActivity extends SherlockFragmentActivity {
                 case BluetoothFriendingService.STATE_CONNECTED:
                     //setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
                     //mConversationArrayAdapter.clear();
-                	sendBluetoothMessage("yo!");
+                	establishFriendship();
                     break;
                 case BluetoothFriendingService.STATE_CONNECTING:
                     //setStatus(R.string.title_connecting);
+                	stopFriendshipEstablishment();
                     break;
                 case BluetoothFriendingService.STATE_LISTEN:
                 case BluetoothFriendingService.STATE_NONE:
                     //setStatus(R.string.title_not_connected);
+                	stopFriendshipEstablishment();
                     break;
                 }
                 break;
             case MESSAGE_WRITE:
                 byte[] writeBuf = (byte[]) msg.obj;
                 // construct a string from the buffer
-                String writeMessage = new String(writeBuf);
-                Log.d(TAG, "Message sent: "+ writeMessage);
+                //String writeMessage = new String(writeBuf);
+                //Log.d(TAG, "Message sent: "+ writeMessage);
                 //mConversationArrayAdapter.add("Me:  " + writeMessage);
                 break;
             case MESSAGE_READ:
                 byte[] readBuf = (byte[]) msg.obj;
+                passToFriendshipEstablishment(readBuf, msg.arg1);
                 // construct a string from the valid bytes in the buffer
-                String readMessage = new String(readBuf, 0, msg.arg1);
-                Log.d(TAG, "Message received: " + readMessage);
                 //mConversationArrayAdapter.add(mConnectedDeviceName+":  " + readMessage);
                 break;
             case MESSAGE_DEVICE_NAME:

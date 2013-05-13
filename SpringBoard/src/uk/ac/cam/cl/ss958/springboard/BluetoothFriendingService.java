@@ -222,11 +222,11 @@ public class BluetoothFriendingService {
 
     private void connectionLost() {
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(AddFriendActivity.MESSAGE_TOAST);
+       /* Message msg = mHandler.obtainMessage(AddFriendActivity.MESSAGE_TOAST);
         Bundle bundle = new Bundle();
         bundle.putString(AddFriendActivity.TEXT, "Device connection was lost");
         msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        mHandler.sendMessage(msg);*/
 
         d("Connection lost");
         // Start the service over to restart listening mode
@@ -427,7 +427,7 @@ public class BluetoothFriendingService {
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
-
+                // mmOutStream.flush();
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(AddFriendActivity.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
