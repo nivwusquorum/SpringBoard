@@ -419,7 +419,11 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 				super.allDone();
 				Log.d(TAG, "FRIENDSHIP: allDone");
 
-				friendAdded(fP.getName());
+				AddFriendActivity.this.runOnUiThread(new Runnable() {
+					public void run() {
+						friendAdded(getName());
+					}
+				});
 				fP = null;
 			}
 
@@ -427,8 +431,6 @@ public class AddFriendActivity extends SherlockFragmentActivity {
 			public void stop() {
 				Log.d(TAG, "FRIENDSHIP: stop");
 				super.stop();
-				mBluetooth.stop();
-				mBluetooth.start();
 				fP = null;
 			}
 		};

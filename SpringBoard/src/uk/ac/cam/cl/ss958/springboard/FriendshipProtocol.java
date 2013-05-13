@@ -2,6 +2,8 @@ package uk.ac.cam.cl.ss958.springboard;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
@@ -9,6 +11,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -86,6 +89,12 @@ public abstract class FriendshipProtocol {
 	private synchronized void maybeFinish() {
 		++partsFinished;
 		if (partsFinished == 2) {
+				// sometims can disconnect before the other end finishes 
+				// receiving data and that causes BT to go mad.
+				try {
+					wait(500);
+				} catch (InterruptedException e) {}
+			
 			allDone();
 		}
 	}
@@ -226,7 +235,11 @@ public abstract class FriendshipProtocol {
 				Parcel res = Parcel.obtain();
 				res.unmarshall(result, 0, totalByteCount);
 				ProfileInfo pi = new ProfileInfo(res);
-				saveProfile(pi);
+				received = pi;
+				if (!saveProfile(pi)) {
+					stop();
+					return;
+				}
 				showMessage("You are now friends with " + pi.username + " from " + pi.organization);
 				maybeFinish();
 			} catch (Exception e) {
@@ -237,10 +250,62 @@ public abstract class FriendshipProtocol {
 				stop();
 			}
 		}
+		
+		private static Uri friendsTableUri = 
+				Uri.parse("content://" + DatabaseContentProvider.AUTHORITY +
+						"/" + SpringboardSqlSchema.Strings.Friends.NAME);
 
-		private void saveProfile(ProfileInfo pi) {
-			// TODO Auto-generated method stub
+		
+		private Uri storeImage(Bitmap image, String name) {
+			File file = c.getFileStreamPath(name + ".png");
+			if (file.exists())
+				file.delete();
+		    try {
+		        FileOutputStream fos = new FileOutputStream(file);
+		        image.compress(Bitmap.CompressFormat.PNG, 90, fos);
+		        fos.close();
+		    } catch (FileNotFoundException e) {
+		        Log.d(TAG, "File not found: " + e.getMessage());
+		        return null;
+		    } catch (IOException e) {
+		        Log.d(TAG, "Error accessing file: " + e.getMessage());
+		        return null;
+		    }  
+		    return Uri.fromFile(file);
+		}
+		
+		private boolean saveProfile(ProfileInfo pi) {
 			
+			
+			final ContentResolver cr = c.getContentResolver();
+			
+			
+			String [] projection = { SpringboardSqlSchema.Strings.Friends.KEY_NAME };
+			
+			String selection = SpringboardSqlSchema.Strings.Friends.KEY_NAME +" =  ?";
+			String [] selectionArgs = { pi.username };
+
+			Cursor c = cr.query(friendsTableUri, projection, selection , selectionArgs, null);
+			if (c.getCount() > 0) {
+				showMessage(pi.username + " is already a Friend.");
+				return false;
+			}
+			
+			// TODO: change filename to one based on unique id.
+			
+			Uri uri = storeImage(pi.picture, pi.username);
+			if (uri == null) {
+				showMessage("Failed to save profile");
+				Log.d(TAG, "Problem saving image.");
+				return false;
+			}
+			ContentValues cv = new ContentValues();
+			cv.put(SpringboardSqlSchema.Strings.Friends.KEY_NAME, pi.username);
+			cv.put(SpringboardSqlSchema.Strings.Friends.KEY_ORGANIZATION, pi.organization);
+			cv.put(SpringboardSqlSchema.Strings.Friends.KEY_IMAGE, uri.toString());
+			cr.insert(friendsTableUri, cv);
+			
+			return true;
 		}
 
 		private ArrayList<Byte> sent;
