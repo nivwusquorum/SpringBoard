@@ -6,7 +6,7 @@ import java.util.List;
 public class SpringboardSqlSchema {
 	
 	public static final String DATABASE_NAME = "SpringBoard";
-	public static final int DATABASE_VERSION = 12;
+	public static final int DATABASE_VERSION = 14;
 	
 	List<SqlSchema> schemas;
 	
@@ -14,7 +14,12 @@ public class SpringboardSqlSchema {
 		public static class Messages {
 			public static String NAME = "messages";
 			public static String KEY_ID = "_id";
+			public static String KEY_USER = "user";
+			public static String KEY_MSGID = "msgid";
+			public static String KEY_TARGET = "target";
+			public static String KEY_TIMESTAMP = "timestamp";
 			public static String KEY_MESSAGE = "message";
+			public static String TARGET_EVERYONE = "everyone";
 		}
 		
 		public static class Properties {
@@ -27,6 +32,7 @@ public class SpringboardSqlSchema {
 			public static String P_IMG_PATH = "image";
 			public static String P_INSTITUTION = "instritution";
 			public static String P_PROFILE_CREATED = "profile_created";
+			public static String P_NEXTMSGID = "nextmsgid";
 		}
 		
 		public static class Friends {
@@ -60,7 +66,11 @@ public class SpringboardSqlSchema {
 			public List<Column> getColumns() {
 				List<Column> columns = new ArrayList<Column>();
 				columns.add(new Column(Strings.Messages.KEY_ID, ColumnType.INTEGER));
+				columns.add(new Column(Strings.Messages.KEY_USER, ColumnType.TEXT));
+				columns.add(new Column(Strings.Messages.KEY_MSGID, ColumnType.INTEGER));
 				columns.add(new Column(Strings.Messages.KEY_MESSAGE, ColumnType.TEXT));
+				columns.add(new Column(Strings.Messages.KEY_TIMESTAMP, ColumnType.INTEGER));
+				columns.add(new Column(Strings.Messages.KEY_TARGET, ColumnType.TEXT));
 				return columns;
 			}
 

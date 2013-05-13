@@ -53,6 +53,11 @@ public class SpringboardDatabaseHelper extends SQLiteOpenHelper implements Provi
 			   SpringboardSqlSchema.Strings.Properties.P_PROFILE_CREATED);
 		cv.put(SpringboardSqlSchema.Strings.Properties.KEY_VALUE, "false");
 		db.insert(SpringboardSqlSchema.Strings.Properties.NAME, null, cv);
+		cv.clear();
+		cv.put(SpringboardSqlSchema.Strings.Properties.KEY_NAME, 
+				   SpringboardSqlSchema.Strings.Properties.P_NEXTMSGID);
+			cv.put(SpringboardSqlSchema.Strings.Properties.KEY_VALUE, "0");
+			db.insert(SpringboardSqlSchema.Strings.Properties.NAME, null, cv);
 	}
 
 	@Override
