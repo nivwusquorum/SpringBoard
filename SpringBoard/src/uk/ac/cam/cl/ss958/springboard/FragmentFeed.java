@@ -45,6 +45,7 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -119,9 +120,50 @@ public class FragmentFeed extends SherlockFragmentActivity {
 
 			// Create an empty adapter we will use to display the loaded data.
 			mAdapter = new SimpleCursorAdapter(getActivity(),
-					android.R.layout.simple_list_item_1, null,
-					new String[] { SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE },
-					new int[] { android.R.id.text1 }, 0);
+					R.layout.feedlistitem, null,
+					new String[] { SpringboardSqlSchema.Strings.Messages.KEY_USER,
+								   SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE },
+					new int[] { R.id.user, R.id.message }, 0) {
+				@Override
+				public void bindView(View view, Context context,
+						Cursor c) {
+					super.bindView(view, context, c);
+					ImageView img = (ImageView)view.findViewById(R.id.profileIcon);
+					img.setMaxWidth(50);
+
+					String username = null;
+					for (int i=0; i< c.getColumnCount(); ++i) {
+						if (c.getColumnName(i).equals(SpringboardSqlSchema.Strings.Messages.KEY_USER)) {
+							username = c.getString(i);
+						}
+						
+					}
+					
+					Log.d(TAG, "looking up avatar for " + username);
+					
+					final ContentResolver cr = getActivity().getContentResolver();
+					
+					String [] projection = { SpringboardSqlSchema.Strings.Friends.KEY_IMAGE };
+					
+					String selection = SpringboardSqlSchema.Strings.Friends.KEY_NAME +" =  ?";
+					String [] selectionArgs = { username };
+					
+					Cursor cfriend = cr.query(friendsTableUri, projection, selection, selectionArgs, null);
+					cfriend.moveToFirst();
+					if (cfriend.isAfterLast()) {
+						Log.d(TAG, "No avatar");
+						img.setImageResource(R.drawable.choose_profile);
+					} else {
+						Log.d(TAG, "Maybe uri: " + cfriend.getString(0));
+						Uri uri = Uri.parse(cfriend.getString(0));
+						img.setImageURI(uri);
+					}
+					
+				}
+				
+				
+
+			};
 			setListAdapter(mAdapter);
 
 			// Start out with a progress indicator.
@@ -260,6 +302,8 @@ public class FragmentFeed extends SherlockFragmentActivity {
 		static final String[] PROJECTION = new String[] {
 			SpringboardSqlSchema.Strings.Messages.KEY_ID,
 			SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE,
+			SpringboardSqlSchema.Strings.Messages.KEY_USER,
+
 		};
 
 		public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -299,6 +343,10 @@ public class FragmentFeed extends SherlockFragmentActivity {
 			return cl;
 		}
 
+	    private static Uri friendsTableUri = 
+	    		Uri.parse("content://" + DatabaseContentProvider.AUTHORITY +
+	    				"/" + SpringboardSqlSchema.Strings.Friends.NAME);
+		
 		public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 			mAdapter.swapCursor(data);
 
