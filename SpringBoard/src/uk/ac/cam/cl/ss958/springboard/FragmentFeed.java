@@ -5,6 +5,7 @@ package uk.ac.cam.cl.ss958.springboard;
 import java.io.File;
 import java.net.URI;
 import java.security.KeyPair;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import uk.ac.cam.cl.ss958.huggler.databases.HugglerDatabase.Property;
@@ -12,11 +13,13 @@ import uk.ac.cam.cl.ss958.springboard.content.ChatMessage;
 import uk.ac.cam.cl.ss958.springboard.content.DatabaseContentProvider;
 import uk.ac.cam.cl.ss958.springboard.content.EncodedChatMessage;
 import uk.ac.cam.cl.ss958.springboard.content.SpringboardSqlSchema;
+import uk.ac.cam.cl.ss958.springboard_huggler.SpringBoardHugglerService;
 import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.SQLException;
@@ -40,15 +43,19 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
@@ -80,6 +87,9 @@ public class FragmentFeed extends SherlockFragmentActivity {
 			fm.beginTransaction().add(android.R.id.tabhost, list).commit();
 		}
 	}
+	
+	
+	
 
 	public static class ThrottledLoaderListFragment extends HackedSherlockListFragment
 	implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -122,24 +132,30 @@ public class FragmentFeed extends SherlockFragmentActivity {
 			mAdapter = new SimpleCursorAdapter(getActivity(),
 					R.layout.feedlistitem, null,
 					new String[] { SpringboardSqlSchema.Strings.Messages.KEY_USER,
-								   SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE },
+								   SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE},
 					new int[] { R.id.user, R.id.message }, 0) {
 				@Override
 				public void bindView(View view, Context context,
 						Cursor c) {
 					super.bindView(view, context, c);
 					ImageView img = (ImageView)view.findViewById(R.id.profileIcon);
+					TextView userText = (TextView)view.findViewById(R.id.user);
 					img.setMaxWidth(50);
 
 					String username = null;
+					String target = null;
 					for (int i=0; i< c.getColumnCount(); ++i) {
 						if (c.getColumnName(i).equals(SpringboardSqlSchema.Strings.Messages.KEY_USER)) {
 							username = c.getString(i);
+						} else if (c.getColumnName(i).equals(SpringboardSqlSchema.Strings.Messages.KEY_TARGET)) {
+							target = c.getString(i);
 						}
 						
 					}
 					
-					Log.d(TAG, "looking up avatar for " + username);
+					userText.setText(username+ " (to " + target + ")");
+					
+					//Log.d(TAG, "looking up avatar for " + username);
 					
 					final ContentResolver cr = getActivity().getContentResolver();
 					
@@ -151,10 +167,10 @@ public class FragmentFeed extends SherlockFragmentActivity {
 					Cursor cfriend = cr.query(friendsTableUri, projection, selection, selectionArgs, null);
 					cfriend.moveToFirst();
 					if (cfriend.isAfterLast()) {
-						Log.d(TAG, "No avatar");
+						//Log.d(TAG, "No avatar");
 						img.setImageResource(R.drawable.choose_profile);
 					} else {
-						Log.d(TAG, "Maybe uri: " + cfriend.getString(0));
+						//Log.d(TAG, "Maybe uri: " + cfriend.getString(0));
 						Uri uri = Uri.parse(cfriend.getString(0));
 						img.setImageURI(uri);
 					}
@@ -177,6 +193,32 @@ public class FragmentFeed extends SherlockFragmentActivity {
 
 			Button sendButton = (Button)root.findViewById(R.id.sendButton);
 
+			
+			final Spinner s = (Spinner)root.findViewById(R.id.targetselector);
+			
+			updateTargetSelector(s);
+			
+			s.setOnTouchListener(new View.OnTouchListener() {
+				@Override
+				public boolean onTouch(View v, MotionEvent event) {
+					updateTargetSelector(s);
+					return false;
+				}
+			});
+			
+			
+			s.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+				@Override
+				public void onItemSelected(AdapterView<?> arg0, View arg1,
+						int arg2, long arg3) {
+					selectedTarget = targetSpinnerChoices[s.getSelectedItemPosition()];
+					Log.d(TAG, "Selected " + selectedTarget);
+				}
+
+				@Override
+				public void onNothingSelected(AdapterView<?> arg0) {					
+				}
+			});
 			sendButton.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {
@@ -213,8 +255,7 @@ public class FragmentFeed extends SherlockFragmentActivity {
 					ContentValues values = new ContentValues();
 					values.put(SpringboardSqlSchema.Strings.Messages.KEY_MSGID, nextmsgid);
 					// TODO: allow to chose target
-					values.put(SpringboardSqlSchema.Strings.Messages.KEY_TARGET,
-							SpringboardSqlSchema.Strings.Messages.TARGET_EVERYONE);
+					values.put(SpringboardSqlSchema.Strings.Messages.KEY_TARGET, selectedTarget);
 
 					values.put(SpringboardSqlSchema.Strings.Messages.KEY_TIMESTAMP,"" +System.currentTimeMillis());
 
@@ -226,9 +267,55 @@ public class FragmentFeed extends SherlockFragmentActivity {
 					
 					messageText.setText("");
 					messageText.clearFocus();
+					
+					synchronized(this) {
+						try {
+							wait(500);
+							Intent service_intent = new Intent(getActivity(), SpringBoardHugglerService.class);
+							getActivity().startService(service_intent);
+						} catch (InterruptedException e) {}
+					}
+					
+					
 				}
 			});
 		}
+		
+		private int lastTargetsNumber = -1;
+	
+		private String selectedTarget = null;
+		
+		private String [] targetSpinnerChoices = null;
+		
+		private void updateTargetSelector(Spinner s) {
+			ArrayList<String> targets = new ArrayList<String>();
+			ContentResolver cr = getActivity().getContentResolver();
+			
+			Cursor c = cr.query(friendsTableUri, new String [] {SpringboardSqlSchema.Strings.Friends.KEY_NAME}, null, null, null);
+			c.moveToFirst();
+			while( !c.isAfterLast()) {
+				targets.add(c.getString(0));
+				c.moveToNext();
+			}
+			
+			targets.add(SpringboardSqlSchema.Strings.Messages.TARGET_EVERYONE);
+			if (lastTargetsNumber != targets.size()) {
+				lastTargetsNumber = targets.size();
+				String [] arr = new String[targets.size()];
+				for (int i=0; i<targets.size(); ++i) {
+					arr[i] = targets.get(i);
+				}
+				
+				ArrayAdapter<String> adapter2 = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_spinner_item, arr);
+				adapter2.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line);
+				s.setAdapter(adapter2);
+				s.setSelection(targets.size()-1);
+				targetSpinnerChoices = arr;
+				selectedTarget = SpringboardSqlSchema.Strings.Messages.TARGET_EVERYONE;
+			}
+		}
+		
+		
 
 		private static Uri propertiesTableUri = 
 				Uri.parse("content://" + DatabaseContentProvider.AUTHORITY +
@@ -303,6 +390,7 @@ public class FragmentFeed extends SherlockFragmentActivity {
 			SpringboardSqlSchema.Strings.Messages.KEY_ID,
 			SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE,
 			SpringboardSqlSchema.Strings.Messages.KEY_USER,
+			SpringboardSqlSchema.Strings.Messages.KEY_TARGET
 
 		};
 
@@ -327,19 +415,21 @@ public class FragmentFeed extends SherlockFragmentActivity {
 			
 			
 			
-			String selection = SpringboardSqlSchema.Strings.Messages.KEY_TARGET + " IN (?,?)";
-			String [] selectionArgs = { SpringboardSqlSchema.Strings.Messages.TARGET_EVERYONE,
+			String selection = "("+SpringboardSqlSchema.Strings.Messages.KEY_USER + " = ? OR " +
+							   SpringboardSqlSchema.Strings.Messages.KEY_TARGET + " IN (?,?) )";
+			String [] selectionArgs = { username,
+										SpringboardSqlSchema.Strings.Messages.TARGET_EVERYONE,
 										username };
 			
 			if (!TextUtils.isEmpty(mCurFilter)) {
 				selection = selection + " AND " +  SpringboardSqlSchema.Strings.Messages.KEY_MESSAGE +
 						" LIKE ?";
-				selectionArgs = new String[] { selectionArgs[0], selectionArgs[1], "%" + mCurFilter + "%" };
+				selectionArgs = new String[] { selectionArgs[0], selectionArgs[1], selectionArgs[2], "%" + mCurFilter + "%" };
 			}
 
 			CursorLoader cl = new CursorLoader(getActivity(), messageTableUri,
 					PROJECTION, selection, selectionArgs, SpringboardSqlSchema.Strings.Messages.KEY_TIMESTAMP + " DESC");
-			cl.setUpdateThrottle(2000); // update at most every 2 seconds.
+			cl.setUpdateThrottle(100); // update at most every 2 seconds.
 			return cl;
 		}
 

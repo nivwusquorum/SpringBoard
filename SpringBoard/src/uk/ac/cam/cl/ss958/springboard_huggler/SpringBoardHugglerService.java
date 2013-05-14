@@ -46,6 +46,8 @@ public class SpringBoardHugglerService extends Service {
 		if(running.compareAndSet(false, true)) {
 			Toast.makeText(this, "Huggler service started. ", Toast.LENGTH_SHORT).show();
 			huggler.start();
+		} else {
+			huggler.askNow();
 		}
 		// If we get killed, after returning from here, restart well if unlucky
 		// may still fail, better check that is running each time activity is

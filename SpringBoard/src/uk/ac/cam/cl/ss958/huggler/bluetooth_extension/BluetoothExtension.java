@@ -63,4 +63,10 @@ public class BluetoothExtension extends HugglerExtension {
 		
 	}
 
+	@Override
+	public void askNow() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

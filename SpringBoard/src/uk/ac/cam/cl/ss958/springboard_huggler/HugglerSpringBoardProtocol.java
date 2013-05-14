@@ -22,6 +22,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
+import android.view.View.MeasureSpec;
 
 public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 	static String TAG = "Huggler";
@@ -35,9 +36,9 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 	@Override
 	public void answerNamedClient(Socket s, String clientName) {
 		try {
-			Log.d("Huggler", "answeringClient");
-			sendMessages(s);
+			Log.d("Huggler", "answeringClient: " + clientName);
 			getMessages(s);
+			sendMessages(s);
 		} catch(Exception e) {
 			Log.w(TAG, "Unsuccessful exchange (Springboard side) : " + e.getMessage());
 		} finally {
@@ -53,9 +54,9 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 	@Override
 	public void askNamedClient(Socket s, String clientName) {
 		try {
-			Log.d("Huggler", "askingClient");
-			getMessages(s);
+			Log.d("Huggler", "askingClient: " + clientName);
 			sendMessages(s);
+			getMessages(s);
 		} catch(Exception e) {
 			Log.w(TAG, "Cannot communicate with discovered peer (SpringBoard): " +e.getMessage());
 		} finally {
@@ -90,6 +91,8 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 										));
 			c.moveToNext();
 		}
+		Log.d(TAG, "Sent messages: " + c.getCount());
+		
 		ObjectOutputStream writer = new ObjectOutputStream(s.getOutputStream());
 		writer.writeObject(messages);
 		/*Object payload = dbh.getMessageTable().getEncoded();
@@ -111,9 +114,10 @@ public class HugglerSpringBoardProtocol extends  HugglerProtocolNamed {
 					if (c.getCount() == 0) {
 						ContentValues cv = m.toContentValues();
 						cr.insert(messageTableUri, cv);
-					}		
+					}	
 				}
 			}
+			Log.d(TAG, "Messages read: " +  ((List)message).size());
 		}
 		/*ObjectInputStream reader = new ObjectInputStream(s.getInputStream());
 		Object message = reader.readObject();

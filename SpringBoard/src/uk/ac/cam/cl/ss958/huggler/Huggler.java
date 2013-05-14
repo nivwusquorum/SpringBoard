@@ -49,6 +49,11 @@ public class Huggler {
 		extensions.add(e);
 	}
 
+	public void askNow() {
+		for (HugglerExtension e : extensions) {
+			e.askNow();
+		}
+	}
 
 	public void start() {
 		for(HugglerExtension e : extensions) {

@@ -92,6 +92,21 @@ public class AccessPointExtension extends HugglerExtension {
 	}	
 
 	@Override
+	public void askNow() {
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					clientAction();
+				} catch(NoProtocolException e) {
+					Log.e(TAG, "AccessPoint: you must set protocol first!");
+				}
+			}
+		});
+		t.start();
+	}
+	
+	@Override
 	public void start() {
 		maybeStopped = false;
 		Thread networkJobs = new Thread() {
