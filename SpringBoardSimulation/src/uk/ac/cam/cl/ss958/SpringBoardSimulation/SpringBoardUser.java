@@ -25,6 +25,7 @@ import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import com.sun.org.apache.xalan.internal.xsltc.trax.SmartTransformerFactoryImpl;
 import com.sun.xml.internal.ws.api.pipe.NextAction;
 
 import cern.jet.random.Zeta;
@@ -32,8 +33,9 @@ import cern.jet.random.engine.MersenneTwister;
 
 public class SpringBoardUser extends SocialUser {
 	// STATIC DATA
-	public static final int MESSAGES_CAPACITY_OTHER = 500;
-	public static final int MESSAGES_CAPACITY_FRIEND = 500;
+	public static final int MESSAGES_CAPACITY_OTHER = 400;
+	public static final int MESSAGES_CAPACITY_FRIEND = 400;
+	public static final int MESSAGES_CAPACITY_REGARDS = 200;
 	public static final int MESSAGES_TOOTHER_INV_PROBABILITY = 10;
 	public static final boolean USE_WIFI = true;
 	public static final boolean USE_BLUETOOTH = true;
@@ -341,26 +343,55 @@ public class SpringBoardUser extends SocialUser {
 		
 	}
 	
+	public enum MessageClass {
+		FORWARDED_BY_OTHERS,
+		FORWARDED_BY_FRIENDS,
+		// sender in {me, my friends} or receiver in {me, my friends}
+		REGARDS_ME_OR_FRIENDS
+	}
+	
 	public class MessageSystem implements ListModel { 
 		MessageStorage msgFriends;
 		MessageStorage msgOthers;
+		MessageStorage msgRegardsMeOrFriends;
 		
 		public MessageSystem() {
 			if (USE_PRIORITY_BOX) {
 				msgFriends = new MessageSmartPriorityBox(SpringBoardUser.this, MESSAGES_CAPACITY_FRIEND);
 				msgOthers = new MessageSmartPriorityBox(SpringBoardUser.this, MESSAGES_CAPACITY_OTHER);
+				msgRegardsMeOrFriends = new MessageSmartPriorityBox(SpringBoardUser.this, MESSAGES_CAPACITY_REGARDS);
 			} else {
 				msgFriends = new SimpleMessageStorage(SpringBoardUser.this, MESSAGES_CAPACITY_FRIEND);
 				msgOthers = new SimpleMessageStorage(SpringBoardUser.this, MESSAGES_CAPACITY_OTHER);
+				msgRegardsMeOrFriends = new SimpleMessageStorage(SpringBoardUser.this, MESSAGES_CAPACITY_REGARDS);
+
+				
 			}
 		}
 		
 		
-		public void addMessage(int msg, boolean friend, double priority) {
-			Integer index = friend ? msgFriends.addMessage(msg, priority) :
-				                     msgOthers.addMessage(msg, priority);
+		public void addMessage(int msg, MessageClass type, double priority) {
+			Integer index = null;
+			switch(type) {
+				case FORWARDED_BY_FRIENDS:
+					index = msgFriends.addMessage(msg, priority);
+					break;
+				case FORWARDED_BY_OTHERS:
+					index = msgOthers.addMessage(msg, priority);
+					break;
+				case REGARDS_ME_OR_FRIENDS:
+					index = msgRegardsMeOrFriends.addMessage(msg, priority);
+					break;
+			}
 			if (index != null) {
-				index = friend ? index : msgFriends.getSize() + index;
+				switch (type) {
+					case REGARDS_ME_OR_FRIENDS:
+						index+=msgOthers.getSize();
+					case FORWARDED_BY_OTHERS:
+						index+=msgFriends.getSize();		
+					case FORWARDED_BY_FRIENDS:
+						break;
+				}
 				for (ListDataListener l : listeners) {
 					l.contentsChanged(new ListDataEvent(this,
 														ListDataEvent.CONTENTS_CHANGED,
@@ -371,12 +402,12 @@ public class SpringBoardUser extends SocialUser {
 		}
 		
 		public boolean contains(Integer x) {
-			return msgFriends.contains(x) || msgOthers.contains(x);
+			return msgFriends.contains(x) || msgOthers.contains(x) || msgRegardsMeOrFriends.contains(x);
 		}
 
 		@Override
 		public int getSize() {
-			return msgFriends.getSize() + msgOthers.getSize(); 
+			return msgFriends.getSize() + msgOthers.getSize() + msgRegardsMeOrFriends.getSize(); 
 		}
 
 		@Override
@@ -388,6 +419,8 @@ public class SpringBoardUser extends SocialUser {
 				ret = msgFriends.get(index);
 			} else if(index<msgFriends.getSize() + msgOthers.getSize()) {
 				ret = msgOthers.get(index - msgFriends.getSize());
+			} else if (index < msgFriends.getSize() + msgOthers.getSize() + msgRegardsMeOrFriends.getSize()){
+				ret = msgRegardsMeOrFriends.get(index - msgFriends.getSize() - msgOthers.getSize());
 			} else {
 				ret = null;
 			}
@@ -648,8 +681,7 @@ public class SpringBoardUser extends SocialUser {
 		// expected numer of messges per day as expected.
 		if (generator.nextInt(model.SIMULATION_DAY) <= messagesPerDayTarget) {
 			Integer msg = mf.getMessage(this, generateMessageTarget());
-			messages.addMessage(msg, true, 1.0);
-			messages.addMessage(msg, false, 1.0);
+			messages.addMessage(msg, MessageClass.REGARDS_ME_OR_FRIENDS, 1.0);
 		}
 	}
 	

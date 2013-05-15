@@ -2,6 +2,8 @@ package uk.ac.cam.cl.ss958.SpringBoardSimulation;
 
 import java.util.Random;
 
+import uk.ac.cam.cl.ss958.SpringBoardSimulation.SpringBoardUser.MessageClass;
+
 public class NaiveMessageExchange implements MessageExchangeProtocol {
 	private Random r = new Random(System.currentTimeMillis());
 	
@@ -26,7 +28,9 @@ public class NaiveMessageExchange implements MessageExchangeProtocol {
 		for (int i=0; i<from.messages.getSize() && messagesSent < maxMessages; ++i) {
 			++messagesSent;
 			if (r.nextInt(10) == 0 || maxMessages < 100) 
-				to.messages.addMessage((Integer)from.messages.getElementAt(i), areFriends, 0.5);
+				to.messages.addMessage((Integer)from.messages.getElementAt(i),
+										areFriends ? MessageClass.FORWARDED_BY_FRIENDS :
+										MessageClass.FORWARDED_BY_OTHERS, 0.5);
 		}
 	}
 

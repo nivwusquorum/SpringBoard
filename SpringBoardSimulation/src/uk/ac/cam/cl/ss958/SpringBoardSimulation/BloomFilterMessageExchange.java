@@ -3,6 +3,9 @@ package uk.ac.cam.cl.ss958.SpringBoardSimulation;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import uk.ac.cam.cl.ss958.SpringBoardSimulation.SpringBoardUser.MessageClass;
+
 import com.skjegstad.utils.BloomFilter;
 
 public class BloomFilterMessageExchange implements MessageExchangeProtocol {
@@ -71,26 +74,31 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 											   SpringBoardUser from,
 										       SpringBoardUser to) {
 		
-		double result = 0.0;
-		if (SpringBoardUser.mf != null) {
-			SpringBoardUser target = SpringBoardUser.mf.getTarget(msg);
-			if(target != null && target.getID() == to.getID()) {
-				result = ALWAYS_SEND;
-			} 
-		}
 			
-		double result2 =  checkIfSeen(to, msg) ? PROBABILITY_TRANSMIT_SEEN : PROBABILITY_NOTSEEN;
-		if (result == ALWAYS_SEND) return result;
-		else return result2;
+		return checkIfSeen(to, msg) ? PROBABILITY_TRANSMIT_SEEN : PROBABILITY_NOTSEEN;
+
     }
 	
 	protected boolean trueWithProbability(double p) {
 		return r.nextDouble()<p;
 	}
 	
-	protected void addMessage(SpringBoardUser to, int msgId, boolean fromFriend, double priority) {
-		to.messages.addMessage(msgId, fromFriend, priority);
-		setSeen(to, msgId);
+	protected boolean hasFriendPriority(int msg, SpringBoardUser to) {
+		SpringBoardUser sender = SpringBoardUser.mf.getSender(msg);
+		SpringBoardUser target = SpringBoardUser.mf.getTarget(msg);
+		
+		//assert (sender !=null && target != null || SpringBoardUser.mf == null
+		// assert to != null;
+		
+		// message was already delivered.
+		if (sender == null || target == null)
+			return false;
+
+		if (to.getFriends().contains(target) || to.getFriends().contains(sender) || target.getID() == to.getID()) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	protected void sendMessages(SpringBoardUser from,
@@ -102,18 +110,22 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 			++messagesSent;
 			Integer msg = (Integer)from.messages.getElementAt(i);
 			assert msg != null;
+			if (hasFriendPriority(msg, to)) {
+				to.messages.addMessage(msg, MessageClass.REGARDS_ME_OR_FRIENDS, 1.0);
+				continue;
+			}
+			
 			double p = getProbabilityOfDelivery(msg, from, to);
 			if (p == ALWAYS_SEND) p = 1.0;
 			if (p == DONT_SEND) p = 0.0;
 			if (trueWithProbability(p)) {
-				addMessage(to, msg, areFriends, p);
-				to.messages.addMessage(msg, areFriends, p);
+				setSeen(to, (int)msg);
+				to.messages.addMessage((int)msg, 
+									   areFriends ? MessageClass.FORWARDED_BY_FRIENDS : MessageClass.FORWARDED_BY_OTHERS,
+									   p);
 			}
 		}
 	}
-
-
-
 
 	@Override
 	public void messageDelivered(Integer mId, SpringBoardUser to) {

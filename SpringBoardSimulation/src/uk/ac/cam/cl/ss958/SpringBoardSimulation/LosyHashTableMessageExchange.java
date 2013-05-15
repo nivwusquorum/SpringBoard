@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Random;
 import com.skjegstad.utils.BloomFilter;
 
-public class LosyHashTableMessageExchange implements MessageExchangeProtocol {
+public class LosyHashTableMessageExchange {/* implements MessageExchangeProtocol {
 	protected Random r = new Random(System.currentTimeMillis());
 	private static final int TICKS_BETWEEN_WIPES = 200*RealisticModel.SIMULATION_DAY;
 	private static final int HASH_TABLE_SLOTS = 30000;
@@ -120,5 +120,5 @@ public class LosyHashTableMessageExchange implements MessageExchangeProtocol {
 	}
 
 	@Override
-	public void step() {}
+	public void step() {}*/
 }

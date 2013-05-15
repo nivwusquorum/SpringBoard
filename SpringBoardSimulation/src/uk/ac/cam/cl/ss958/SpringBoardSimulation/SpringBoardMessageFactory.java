@@ -129,6 +129,10 @@ public class SpringBoardMessageFactory {
 		return m==null ? null : m.to;
 	}
 	
+	public SpringBoardUser getSender(int msg) {
+		Message m = messages.get(msg);
+		return m == null ? null : m.from;
+	}
 	
 	public void display(JPanel parent) {
 		new DisplayProperties(null, "Social graph properties");
