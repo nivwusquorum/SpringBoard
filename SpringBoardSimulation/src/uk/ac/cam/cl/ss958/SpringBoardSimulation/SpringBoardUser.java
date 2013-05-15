@@ -386,11 +386,13 @@ public class SpringBoardUser extends SocialUser {
 			if (index != null) {
 				switch (type) {
 					case REGARDS_ME_OR_FRIENDS:
-						index+=msgOthers.getSize();
-					case FORWARDED_BY_OTHERS:
-						index+=msgFriends.getSize();		
-					case FORWARDED_BY_FRIENDS:
 						break;
+					case FORWARDED_BY_FRIENDS:
+						index += msgRegardsMeOrFriends.getSize();
+						break;
+					case FORWARDED_BY_OTHERS:
+						index+=msgFriends.getSize()+msgRegardsMeOrFriends.getSize();
+
 				}
 				for (ListDataListener l : listeners) {
 					l.contentsChanged(new ListDataEvent(this,
@@ -412,21 +414,23 @@ public class SpringBoardUser extends SocialUser {
 
 		@Override
 		public Object getElementAt(int index) {
-			Integer ret = null;
 			if(index<0) {
-				ret = null;
-			} else if(index<msgFriends.getSize()) {
-				ret = msgFriends.get(index);
-			} else if(index<msgFriends.getSize() + msgOthers.getSize()) {
-				ret = msgOthers.get(index - msgFriends.getSize());
-			} else if (index < msgFriends.getSize() + msgOthers.getSize() + msgRegardsMeOrFriends.getSize()){
-				ret = msgRegardsMeOrFriends.get(index - msgFriends.getSize() - msgOthers.getSize());
+				assert false;
+				return null;
+			} else if (index < msgRegardsMeOrFriends.getSize()) {
+				return msgRegardsMeOrFriends.get(index);
+			} else if (index < msgRegardsMeOrFriends.getSize() +
+						       msgFriends.getSize()) {
+				return msgFriends.get(index - msgRegardsMeOrFriends.getSize());
+			} else if (index < msgRegardsMeOrFriends.getSize() +
+				       		   msgFriends.getSize() +
+				       		   msgOthers.getSize()) {
+				return msgOthers.get(index - msgRegardsMeOrFriends.getSize() - msgFriends.getSize());
 			} else {
-				ret = null;
+				assert false;
+				return null;
 			}
-			
-			if (ret == null) return "empty";
-			else return ret;
+
 		}
 
 		Set<ListDataListener> listeners = new HashSet<ListDataListener>();
@@ -682,6 +686,7 @@ public class SpringBoardUser extends SocialUser {
 		if (generator.nextInt(model.SIMULATION_DAY) <= messagesPerDayTarget) {
 			Integer msg = mf.getMessage(this, generateMessageTarget());
 			messages.addMessage(msg, MessageClass.REGARDS_ME_OR_FRIENDS, 1.0);
+
 		}
 	}
 	
