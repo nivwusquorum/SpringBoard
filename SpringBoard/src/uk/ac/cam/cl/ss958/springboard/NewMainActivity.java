@@ -57,6 +57,9 @@ public class NewMainActivity extends SherlockFragmentActivity {
 		mFriendsSpec = mTabHost.newTabSpec("friends").setIndicator("Friends");
 		mTabsAdapter.addTab(mFriendsSpec,
 				FragmentFriends.ContainerFragment.class, null);
+		mTabsAdapter.addTab(mTabHost.newTabSpec("actions").setIndicator("Actions"),
+				ActionFragment.class, null);
+ 
 		/*mTabsAdapter.addTab(mTabHost.newTabSpec("simple").setIndicator("Simple"),
                 FragmentStackSupport.CountingFragment.class, null);
         mTabsAdapter.addTab(mTabHost.newTabSpec("contacts").setIndicator("Contacts"),
