@@ -1,8 +1,12 @@
 package uk.ac.cam.cl.ss958.SpringBoardSimulation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import uk.ac.cam.cl.ss958.SpringBoardSimulation.SpringBoardUser.MessageClass;
 
@@ -16,9 +20,6 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 	private static final double PROBABILITY_TRANSMIT_SEEN = 0.1;
 	private static final double PROBABILITY_NOTSEEN = 0.5;
 	private static final int BLOOM_HASHES = 34;
-	
-	protected static final double DONT_SEND = -1.0;
-	protected static final double ALWAYS_SEND = 2.0;
 
 	public BloomFilterMessageExchange() {
 		super();
@@ -83,22 +84,74 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 		return r.nextDouble()<p;
 	}
 	
-	protected boolean hasFriendPriority(int msg, SpringBoardUser to) {
+	
+	protected static class AbsoluteRule {
+		public static enum RuleType {
+			NONE,
+			NEVERDELIVER,
+			ALWAYSDELIVER;
+		}
+		
+		public final RuleType type;
+		public final int priority;
+		
+		private static Set<Integer> prioritiesUsed = new HashSet<Integer>();
+		
+		private AbsoluteRule(RuleType type, int priority) {
+			this.type = type;
+			if (priority != 0) {
+				assert !prioritiesUsed.contains(priority);
+				prioritiesUsed.add(priority);
+			}
+			this.priority = priority;
+		}
+		
+		public static AbsoluteRule none() {
+			return new AbsoluteRule(RuleType.NONE, 0);// TODO Auto-generated constructor stub
+		}
+		
+		// currently also results in putting message in friends buffer.
+		public static AbsoluteRule always(int p) {
+			assert p >= 1;
+			return new AbsoluteRule(RuleType.ALWAYSDELIVER, p);// TODO Auto-generated constructor stub
+		}
+		
+		public static AbsoluteRule never(int p) {
+			assert p >= 1;
+			return new AbsoluteRule(RuleType.NEVERDELIVER, p);// TODO Auto-generated constructor stub
+		}
+	}
+	
+	private static final AbsoluteRule alwaysSendBecauseFriendsOptimization =
+			AbsoluteRule.always(1);
+	
+	protected List<AbsoluteRule> getAbsoluteRules(int msg, SpringBoardUser to) {
+		List<AbsoluteRule> rules = new ArrayList<AbsoluteRule>();
+		
 		SpringBoardUser sender = SpringBoardUser.mf.getSender(msg);
 		SpringBoardUser target = SpringBoardUser.mf.getTarget(msg);
 		
-		//assert (sender !=null && target != null || SpringBoardUser.mf == null
-		// assert to != null;
-		
-		// message was already delivered.
 		if (sender == null || target == null)
-			return false;
-
+			return rules;
+		
 		if (to.getFriends().contains(target) || to.getFriends().contains(sender) || target.getID() == to.getID()) {
-			return true;
-		} else {
-			return false;
+			rules.add(alwaysSendBecauseFriendsOptimization);
 		}
+		
+		return rules;
+	}
+	
+	
+	
+	private AbsoluteRule getAbsoluteRule(int msg, SpringBoardUser to) {
+		List<AbsoluteRule> rules = getAbsoluteRules(msg, to);
+		AbsoluteRule best = AbsoluteRule.none();
+		for (AbsoluteRule ar : rules) {
+			if (best.priority < ar.priority) {
+				best = ar;
+			}
+		}
+		return best;
 	}
 
 	protected void sendMessages(SpringBoardUser from,
@@ -110,14 +163,20 @@ public class BloomFilterMessageExchange implements MessageExchangeProtocol {
 			++messagesSent;
 			Integer msg = (Integer)from.messages.getElementAt(i);
 			assert msg != null;
-			if (hasFriendPriority(msg, to)) {
-				to.messages.addMessage(msg, MessageClass.REGARDS_ME_OR_FRIENDS, 1.0);
-				continue;
+			
+			
+			switch(getAbsoluteRule(msg,to).type) {
+				case ALWAYSDELIVER:
+					to.messages.addMessage(msg, MessageClass.REGARDS_ME_OR_FRIENDS, 1.0);
+					continue;
+				case NEVERDELIVER:
+					continue;
+				case NONE:
+					break;
 			}
 			
 			double p = getProbabilityOfDelivery(msg, from, to);
-			if (p == ALWAYS_SEND) p = 1.0;
-			if (p == DONT_SEND) p = 0.0;
+
 			if (trueWithProbability(p)) {
 				setSeen(to, (int)msg);
 				to.messages.addMessage((int)msg, 

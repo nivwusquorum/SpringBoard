@@ -30,6 +30,9 @@ public class MainGui extends JFrame {
 
 		setLayout(new BorderLayout());
 
+		long maxBytes = Runtime.getRuntime().maxMemory();
+		System.out.println("Max memory: " + maxBytes / 1024 / 1024 + "M");
+		
 		/*
 		model = new RandomModel(740,670) {
 			@Override

@@ -75,6 +75,8 @@ public class NakMessageProtocol extends BloomFilterMessageExchange {
 		cb.add(mId);
 	}
 	
+
+	
 	@Override
 	public void messageDelivered(Integer mId, SpringBoardUser to) {
 		super.messageDelivered(mId, to);
@@ -100,26 +102,25 @@ public class NakMessageProtocol extends BloomFilterMessageExchange {
 		}
 	}
 	
+	private static final AbsoluteRule neverSendBecauseREM = AbsoluteRule.never(2);
+	
 	@Override
-	protected double getProbabilityOfDelivery(int msg, SpringBoardUser from,
-			SpringBoardUser to) {
-		double prevResult = super.getProbabilityOfDelivery(msg, from, to);
-		if (prevResult == ALWAYS_SEND || prevResult == DONT_SEND) 
-			return prevResult;
+	protected List<AbsoluteRule> getAbsoluteRules(int msg, SpringBoardUser to) {
+		List<AbsoluteRule> rules =  super.getAbsoluteRules(msg, to);
+		
 		if (isMessageInREMs(msg, to)) {
-			// have REM for it, ignore it and bump up REM.
-			return DONT_SEND;
+			rules.add(neverSendBecauseREM);
 		} else {
 			Set<Integer> myMessages = messagesDeliveredTo.get(to.getID());
 			if (myMessages != null && myMessages.contains(msg)) {
 				// if I don't have rem, but it was delivered to me, emit another rem.
 				addRem(to,msg);
-				return DONT_SEND;
-			} else {
-				// return what I got from bloom filter.
-				return prevResult;
+				rules.add(neverSendBecauseREM);
 			}
 		}
+		
+		return rules;
+		
 	}
 	
 	@Override
